@@ -32,7 +32,7 @@ export default function TodoList({ tasks, onAdd, onToggle, onDelete }: Props) {
             <li key={task.id} className="group flex items-center gap-2.5">
               <button
                 onClick={() => onToggle(task.id)}
-                className="w-4 h-4 rounded border border-stone-300 dark:border-stone-600 hover:border-amber-400 dark:hover:border-amber-400 shrink-0 transition-colors flex items-center justify-center"
+                className="w-4 h-4 rounded border border-stone-300/60 dark:border-stone-600/50 hover:border-amber-400/70 dark:hover:border-amber-400/60 shrink-0 transition-colors flex items-center justify-center"
                 title="Complete"
               />
               <span className="flex-1 text-sm text-stone-700 dark:text-stone-200 leading-snug">{task.text}</span>
@@ -50,13 +50,13 @@ export default function TodoList({ tasks, onAdd, onToggle, onDelete }: Props) {
 
       {done.length > 0 && (
         <>
-          {pending.length > 0 && <div className="border-t border-stone-200 dark:border-stone-800 my-0.5" />}
+          {pending.length > 0 && <div className="border-t border-stone-200/40 dark:border-stone-800/30 my-0.5" />}
           <ul className="flex flex-col gap-1.5">
             {done.map((task) => (
               <li key={task.id} className="group flex items-center gap-2.5">
                 <button
                   onClick={() => onToggle(task.id)}
-                  className="w-4 h-4 rounded border border-stone-200 dark:border-stone-700 bg-stone-100 dark:bg-stone-800 shrink-0 transition-colors flex items-center justify-center"
+                  className="w-4 h-4 rounded border border-stone-200/50 dark:border-stone-700/40 bg-stone-100 dark:bg-stone-800 shrink-0 transition-colors flex items-center justify-center"
                   title="Undo"
                 >
                   <svg width="8" height="6" viewBox="0 0 8 6" fill="none">
@@ -84,7 +84,7 @@ export default function TodoList({ tasks, onAdd, onToggle, onDelete }: Props) {
       )}
 
       <div className="flex items-center gap-2 pt-1">
-        <div className="flex-1 flex items-center gap-2 rounded-xl border border-stone-200 dark:border-stone-800 bg-stone-50 dark:bg-stone-900/30 px-3 py-2 focus-within:border-stone-300 dark:focus-within:border-stone-700 transition-colors">
+        <div className="flex-1 flex items-center gap-2 rounded-xl border border-stone-200/40 dark:border-stone-800/30 bg-stone-50 dark:bg-stone-900/30 px-3 py-2 focus-within:border-stone-300/60 dark:focus-within:border-stone-700/40 transition-colors">
           <input
             placeholder="Add a task..."
             value={input}

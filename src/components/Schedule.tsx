@@ -1,11 +1,15 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
-import type { TimeBlock, GoogleCalendar } from '../types';
+import type { TimeBlock, GoogleCalendar, Task } from '../types';
 
 interface Props {
   blocks: TimeBlock[];
   onAdd: (block: Omit<TimeBlock, 'id'>) => void;
   onUpdate: (id: string, updates: Partial<TimeBlock>) => void;
   onDelete: (id: string) => void;
+  tasks?: Task[];
+  onAddTask?: (text: string, date?: string) => void;
+  onToggleTask?: (id: string) => void;
+  onDeleteTask?: (id: string) => void;
 }
 
 type CalendarView = 'today' | 'week' | 'month';
@@ -21,12 +25,12 @@ const MONTH_NAMES = [
 ];
 
 const BLOCK_COLORS = [
-  { label: 'Amber',  value: 'amber',  classes: 'bg-amber-500/20 border border-amber-500/40 text-amber-700 dark:text-amber-300' },
-  { label: 'Blue',   value: 'blue',   classes: 'bg-blue-500/20 border border-blue-500/40 text-blue-700 dark:text-blue-300' },
-  { label: 'Green',  value: 'green',  classes: 'bg-emerald-500/20 border border-emerald-500/40 text-emerald-700 dark:text-emerald-300' },
-  { label: 'Rose',   value: 'rose',   classes: 'bg-rose-500/20 border border-rose-500/40 text-rose-700 dark:text-rose-300' },
-  { label: 'Purple', value: 'purple', classes: 'bg-violet-500/20 border border-violet-500/40 text-violet-700 dark:text-violet-300' },
-  { label: 'Sky',    value: 'sky',    classes: 'bg-sky-500/20 border border-sky-500/40 text-sky-700 dark:text-sky-300' },
+  { label: 'Amber',  value: 'amber',  classes: 'bg-amber-500/15 border border-amber-500/25 text-amber-700 dark:text-amber-300' },
+  { label: 'Blue',   value: 'blue',   classes: 'bg-blue-500/15 border border-blue-500/25 text-blue-700 dark:text-blue-300' },
+  { label: 'Green',  value: 'green',  classes: 'bg-emerald-500/15 border border-emerald-500/25 text-emerald-700 dark:text-emerald-300' },
+  { label: 'Rose',   value: 'rose',   classes: 'bg-rose-500/15 border border-rose-500/25 text-rose-700 dark:text-rose-300' },
+  { label: 'Purple', value: 'purple', classes: 'bg-violet-500/15 border border-violet-500/25 text-violet-700 dark:text-violet-300' },
+  { label: 'Sky',    value: 'sky',    classes: 'bg-sky-500/15 border border-sky-500/25 text-sky-700 dark:text-sky-300' },
 ];
 
 const SWATCH_BG: Record<string, string> = {
@@ -98,7 +102,7 @@ function getMonthCells(monthDate: Date): (Date | null)[] {
   return cells;
 }
 
-export default function Schedule({ blocks, onAdd, onUpdate, onDelete }: Props) {
+export default function Schedule({ blocks, onAdd, onUpdate, onDelete, tasks = [], onAddTask, onToggleTask, onDeleteTask }: Props) {
   const [view, setView] = useState<CalendarView>('week');
   const [weekOffset, setWeekOffset] = useState(0);
   const [monthDate, setMonthDate] = useState(new Date());
@@ -115,6 +119,7 @@ export default function Schedule({ blocks, onAdd, onUpdate, onDelete }: Props) {
   const [googleCalendars, setGoogleCalendars] = useState<GoogleCalendar[]>([]);
   const [selectedCalendarId, setSelectedCalendarId] = useState<string>('');
   const [hiddenCalendars, setHiddenCalendars] = useState<Set<string>>(new Set());
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [selectedBlock, setSelectedBlock] = useState<TimeBlock | null>(null);
   const [detailPos, setDetailPos] = useState<{ top: number; left: number } | null>(null);
   const selectedBlockRef = useRef<HTMLDivElement>(null);
@@ -207,6 +212,23 @@ export default function Schedule({ blocks, onAdd, onUpdate, onDelete }: Props) {
     return Math.max(START_HOUR * 60, Math.min(END_HOUR * 60, snapToQuarter(mins)));
   }
 
+  function handleDoubleClick(e: React.MouseEvent<HTMLDivElement>, date: Date) {
+    if (adding || e.button !== 0) return;
+    closeDetail();
+    e.preventDefault();
+    const mins = yToMinutes(e.clientY);
+    const finalStart = mins;
+    const finalEnd = Math.min(mins + 60, END_HOUR * 60);
+
+    setFormDate(toISODate(date));
+    setStartTime(`${pad(Math.floor(finalStart / 60))}:${pad(finalStart % 60)}`);
+    setEndTime(`${pad(Math.floor(finalEnd / 60))}:${pad(finalEnd % 60)}`);
+    setDragDay(date.getDay());
+    setDragStartMins(finalStart);
+    setDragCurrentMins(finalEnd);
+    setAdding(true);
+  }
+
   function handleDragStart(e: React.MouseEvent<HTMLDivElement>, date: Date) {
     if (adding || e.button !== 0) return;
     closeDetail();
@@ -233,8 +255,15 @@ export default function Schedule({ blocks, onAdd, onUpdate, onDelete }: Props) {
     const s = dragRef.current.startMins;
     const lo = Math.min(s, endMins);
     const hi = Math.max(s, endMins);
+
+    // Ignore single clicks — require a meaningful drag (at least 10 min)
+    if (hi - lo < 10) {
+      setDragDay(-1);
+      return;
+    }
+
     const finalStart = lo;
-    const finalEnd = hi - lo < 15 ? Math.min(lo + 60, END_HOUR * 60) : hi;
+    const finalEnd = hi;
 
     setFormDate(dragRef.current.date);
     setStartTime(`${pad(Math.floor(finalStart / 60))}:${pad(finalStart % 60)}`);
@@ -387,6 +416,10 @@ export default function Schedule({ blocks, onAdd, onUpdate, onDelete }: Props) {
 
   // Compute popover position relative to container
   const [popoverPos, setPopoverPos] = useState<{ top: number; left: number } | null>(null);
+
+  // Day todo popup state
+  const [todoPopupDate, setTodoPopupDate] = useState<string | null>(null);
+  const [todoInput, setTodoInput] = useState('');
   useEffect(() => {
     if (adding && ghostRef.current && containerRef.current) {
       const ghostRect = ghostRef.current.getBoundingClientRect();
@@ -682,20 +715,31 @@ export default function Schedule({ blocks, onAdd, onUpdate, onDelete }: Props) {
             <div className="w-10 shrink-0" />
             {gridDates.map((date, i) => {
               const isToday = date.toDateString() === todayStr;
+              const dateStr = toISODate(date);
+              const dayTasks = tasks.filter((t) => t.date === dateStr);
+              const pendingCount = dayTasks.filter((t) => !t.done).length;
               return (
-                <div key={i} className="flex-1 flex flex-col items-center pb-2 select-none">
-                  <span className={`text-[10px] uppercase tracking-wider font-semibold ${
-                    isToday ? 'text-amber-500 dark:text-amber-400' : 'text-stone-400 dark:text-stone-600'
+                <div
+                  key={i}
+                  className="flex-1 flex flex-col items-center pb-2 select-none cursor-pointer group/day"
+                  onClick={() => { setTodoPopupDate(dateStr); setTodoInput(''); }}
+                  title="Click to manage to-dos for this day"
+                >
+                  <span className={`text-[10px] uppercase tracking-wider font-semibold transition-colors ${
+                    isToday ? 'text-amber-500 dark:text-amber-400' : 'text-stone-400 dark:text-stone-600 group-hover/day:text-stone-600 dark:group-hover/day:text-stone-400'
                   }`}>
                     {view === 'today'
                       ? date.toLocaleDateString('en-US', { weekday: 'long' })
                       : date.toLocaleDateString('en-US', { weekday: 'short' })}
                   </span>
-                  <span className={`mt-0.5 w-6 h-6 flex items-center justify-center rounded-full text-xs font-semibold ${
-                    isToday ? 'bg-amber-500 text-white' : 'text-stone-600 dark:text-stone-400'
+                  <span className={`mt-0.5 w-6 h-6 flex items-center justify-center rounded-full text-xs font-semibold transition-colors ${
+                    isToday ? 'bg-amber-500 text-white' : 'text-stone-600 dark:text-stone-400 group-hover/day:bg-stone-100 dark:group-hover/day:bg-stone-800'
                   }`}>
                     {date.getDate()}
                   </span>
+                  {pendingCount > 0 && (
+                    <span className="mt-1 w-1.5 h-1.5 rounded-full bg-amber-400 dark:bg-amber-500" />
+                  )}
                 </div>
               );
             })}
@@ -704,7 +748,7 @@ export default function Schedule({ blocks, onAdd, onUpdate, onDelete }: Props) {
           {/* Scrollable grid */}
           <div
             ref={scrollRef}
-            className="overflow-y-auto rounded-xl border border-stone-200 dark:border-stone-800/60"
+            className="overflow-y-auto rounded-xl border border-stone-200/40 dark:border-stone-800/25"
             style={{ maxHeight: '520px' }}
           >
             <div className="relative flex" style={{ height: `${HOURS.length * HOUR_HEIGHT}px` }}>
@@ -734,10 +778,11 @@ export default function Schedule({ blocks, onAdd, onUpdate, onDelete }: Props) {
                     key={dayIdx}
                     ref={(el) => { if (el) { columnRefs.current.set(date.getDay(), el); el.dataset.date = toISODate(date); } }}
                     onMouseDown={(e) => handleDragStart(e, date)}
+                    onDoubleClick={(e) => handleDoubleClick(e, date)}
                     className={`flex-1 relative border-l cursor-crosshair select-none transition-colors ${
                       isToday
-                        ? 'border-stone-200 dark:border-stone-700/60 bg-amber-500/[0.025] dark:bg-amber-500/[0.04]'
-                        : 'border-stone-100 dark:border-stone-800/40 hover:bg-stone-50/50 dark:hover:bg-stone-800/10'
+                        ? 'border-stone-200/40 dark:border-stone-700/30 bg-amber-500/[0.025] dark:bg-amber-500/[0.04]'
+                        : 'border-stone-100/60 dark:border-stone-800/20 hover:bg-stone-50/50 dark:hover:bg-stone-800/10'
                     }`}
                   >
                     {/* Hour lines */}
@@ -745,7 +790,7 @@ export default function Schedule({ blocks, onAdd, onUpdate, onDelete }: Props) {
                       <div
                         key={idx}
                         style={{ position: 'absolute', top: `${idx * HOUR_HEIGHT}px`, left: 0, right: 0, height: `${HOUR_HEIGHT}px` }}
-                        className="border-b border-stone-200 dark:border-stone-700/50"
+                        className="border-b border-stone-200/30 dark:border-stone-700/20"
                       />
                     ))}
                     {/* Half-hour lines */}
@@ -886,9 +931,9 @@ export default function Schedule({ blocks, onAdd, onUpdate, onDelete }: Props) {
 
       {/* ── MONTH GRID ── */}
       {view === 'month' && (
-        <div className="rounded-xl border border-stone-200 dark:border-stone-800/60 overflow-hidden">
+        <div className="rounded-xl border border-stone-200/40 dark:border-stone-800/25 overflow-hidden">
           {/* Day-of-week header */}
-          <div className="grid grid-cols-7 border-b border-stone-200 dark:border-stone-800/60 bg-stone-50/50 dark:bg-stone-900/20">
+          <div className="grid grid-cols-7 border-b border-stone-200/40 dark:border-stone-800/25 bg-stone-50/50 dark:bg-stone-900/20">
             {DAY_LABELS.map((day) => (
               <div key={day} className="py-2 text-center text-[10px] font-semibold uppercase tracking-wider text-stone-400 dark:text-stone-600">
                 {day}
@@ -903,29 +948,44 @@ export default function Schedule({ blocks, onAdd, onUpdate, onDelete }: Props) {
                 return (
                   <div
                     key={i}
-                    className="h-24 border-b border-r border-stone-100 dark:border-stone-800/30 bg-stone-50/20 dark:bg-stone-900/10"
+                    className="h-24 border-b border-r border-stone-100/50 dark:border-stone-800/15 bg-stone-50/20 dark:bg-stone-900/10"
                   />
                 );
               }
               const isToday = date.toDateString() === todayStr;
               const isCurrentMonth = date.getMonth() === monthDate.getMonth();
-              const dayBlocks = allBlocks.filter((b) => b.date === toISODate(date));
+              const dateStr = toISODate(date);
+              const dayBlocks = allBlocks.filter((b) => b.date === dateStr);
+              const monthDayTasks = tasks.filter((t) => t.date === dateStr);
+              const monthPendingCount = monthDayTasks.filter((t) => !t.done).length;
 
               return (
                 <div
                   key={i}
                   onClick={() => handleMonthCellClick(date)}
-                  className={`h-24 p-1.5 border-b border-r border-stone-100 dark:border-stone-800/30 cursor-pointer transition-colors flex flex-col ${
+                  className={`h-24 p-1.5 border-b border-r border-stone-100/50 dark:border-stone-800/15 cursor-pointer transition-colors flex flex-col ${
                     isToday
                       ? 'bg-amber-50/70 dark:bg-amber-900/10'
                       : 'hover:bg-stone-50 dark:hover:bg-stone-800/20'
                   } ${!isCurrentMonth ? 'opacity-30' : ''}`}
                 >
-                  <span className={`text-xs font-semibold w-5 h-5 flex items-center justify-center rounded-full mb-1 shrink-0 ${
-                    isToday ? 'bg-amber-500 text-white' : 'text-stone-600 dark:text-stone-400'
-                  }`}>
-                    {date.getDate()}
-                  </span>
+                  <div className="flex items-center justify-between mb-1">
+                    <span className={`text-xs font-semibold w-5 h-5 flex items-center justify-center rounded-full shrink-0 ${
+                      isToday ? 'bg-amber-500 text-white' : 'text-stone-600 dark:text-stone-400'
+                    }`}>
+                      {date.getDate()}
+                    </span>
+                    {monthPendingCount > 0 && (
+                      <button
+                        onClick={(e) => { e.stopPropagation(); setTodoPopupDate(dateStr); setTodoInput(''); }}
+                        className="flex items-center gap-0.5 text-[9px] font-semibold text-amber-500 dark:text-amber-400 hover:text-amber-600 dark:hover:text-amber-300 transition-colors"
+                        title={`${monthPendingCount} to-do${monthPendingCount > 1 ? 's' : ''}`}
+                      >
+                        <span className="w-1.5 h-1.5 rounded-full bg-amber-400 dark:bg-amber-500" />
+                        {monthPendingCount}
+                      </button>
+                    )}
+                  </div>
                   <div className="flex flex-col gap-0.5 overflow-hidden">
                     {dayBlocks.slice(0, 2).map((block) => (
                       <div
@@ -963,7 +1023,7 @@ export default function Schedule({ blocks, onAdd, onUpdate, onDelete }: Props) {
       {adding && popoverPos && (
         <div
           style={{ position: 'absolute', top: popoverPos.top, left: popoverPos.left, zIndex: 50 }}
-          className="w-56 rounded-xl border border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-900 shadow-xl p-3 flex flex-col gap-2.5"
+          className="w-56 rounded-xl border border-stone-200/50 dark:border-stone-700/30 bg-white dark:bg-stone-900 shadow-xl p-3 flex flex-col gap-2.5"
           onClick={(e) => e.stopPropagation()}
           onMouseDown={(e) => e.stopPropagation()}
         >
@@ -987,7 +1047,7 @@ export default function Schedule({ blocks, onAdd, onUpdate, onDelete }: Props) {
             <select
               value={selectedCalendarId}
               onChange={(e) => setSelectedCalendarId(e.target.value)}
-              className="w-full text-[11px] bg-stone-50 dark:bg-stone-800 text-stone-700 dark:text-stone-300 rounded-md px-2 py-1.5 border border-stone-200 dark:border-stone-700 outline-none"
+              className="w-full text-[11px] bg-stone-50 dark:bg-stone-800 text-stone-700 dark:text-stone-300 rounded-md px-2 py-1.5 border border-stone-200/40 dark:border-stone-700/30 outline-none"
             >
               {googleCalendars.map((cal) => (
                 <option key={cal.id} value={cal.id}>
@@ -1011,7 +1071,7 @@ export default function Schedule({ blocks, onAdd, onUpdate, onDelete }: Props) {
               ))}
             </div>
           )}
-          <div className="flex items-center gap-2 pt-1 border-t border-stone-100 dark:border-stone-800">
+          <div className="flex items-center gap-2 pt-1 border-t border-stone-100/50 dark:border-stone-800/30">
             <button
               onClick={cancelAdd}
               className="flex-1 text-xs text-stone-400 dark:text-stone-500 hover:text-stone-600 dark:hover:text-stone-400 transition-colors py-1"
@@ -1033,7 +1093,7 @@ export default function Schedule({ blocks, onAdd, onUpdate, onDelete }: Props) {
       {selectedBlock && detailPos && (
         <div
           style={{ position: 'absolute', top: detailPos.top, left: detailPos.left, zIndex: 50 }}
-          className="w-56 rounded-xl border border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-900 shadow-xl p-3 flex flex-col gap-2.5"
+          className="w-56 rounded-xl border border-stone-200/50 dark:border-stone-700/30 bg-white dark:bg-stone-900 shadow-xl p-3 flex flex-col gap-2.5"
           onClick={(e) => e.stopPropagation()}
           onMouseDown={(e) => e.stopPropagation()}
         >
@@ -1083,7 +1143,7 @@ export default function Schedule({ blocks, onAdd, onUpdate, onDelete }: Props) {
                 }
                 setSelectedBlock({ ...selectedBlock, ...updates });
               }}
-              className="w-full text-[11px] bg-stone-50 dark:bg-stone-800 text-stone-700 dark:text-stone-300 rounded-md px-2 py-1.5 border border-stone-200 dark:border-stone-700 outline-none"
+              className="w-full text-[11px] bg-stone-50 dark:bg-stone-800 text-stone-700 dark:text-stone-300 rounded-md px-2 py-1.5 border border-stone-200/40 dark:border-stone-700/30 outline-none"
             >
               {!selectedBlock.googleCalendarId && (
                 <option value="">Local event</option>
@@ -1093,7 +1153,7 @@ export default function Schedule({ blocks, onAdd, onUpdate, onDelete }: Props) {
               ))}
             </select>
           )}
-          <div className="flex items-center gap-2 pt-1 border-t border-stone-100 dark:border-stone-800">
+          <div className="flex items-center gap-2 pt-1 border-t border-stone-100/50 dark:border-stone-800/30">
             <button
               onClick={closeDetail}
               className="flex-1 text-xs text-stone-400 dark:text-stone-500 hover:text-stone-600 dark:hover:text-stone-400 transition-colors py-1"
@@ -1111,13 +1171,138 @@ export default function Schedule({ blocks, onAdd, onUpdate, onDelete }: Props) {
       )}
     </div>
 
+    {/* Day todo popup */}
+    {todoPopupDate && (
+      <div className="fixed inset-0 z-50 flex items-center justify-center" onClick={() => setTodoPopupDate(null)}>
+        <div className="absolute inset-0 bg-black/20 dark:bg-black/40" />
+        <div
+          className="relative w-80 max-h-[420px] rounded-2xl border border-stone-200/50 dark:border-stone-700/30 bg-white dark:bg-stone-900 shadow-2xl flex flex-col overflow-hidden"
+          onClick={(e) => e.stopPropagation()}
+        >
+          {/* Header */}
+          <div className="flex items-center justify-between px-4 py-3 border-b border-stone-100/50 dark:border-stone-800/30">
+            <div>
+              <h3 className="text-sm font-semibold text-stone-800 dark:text-stone-200">
+                {new Date(todoPopupDate + 'T00:00').toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}
+              </h3>
+              <p className="text-[10px] text-stone-400 dark:text-stone-600">To-dos for this day</p>
+            </div>
+            <button
+              onClick={() => setTodoPopupDate(null)}
+              className="w-6 h-6 flex items-center justify-center rounded-lg text-stone-400 hover:text-stone-600 dark:hover:text-stone-300 hover:bg-stone-100 dark:hover:bg-stone-800 transition-all text-xs"
+            >
+              ✕
+            </button>
+          </div>
+
+          {/* Task list */}
+          <div className="flex-1 overflow-y-auto px-4 py-3 flex flex-col gap-1.5">
+            {(() => {
+              const dayTasks = tasks.filter((t) => t.date === todoPopupDate);
+              const pending = dayTasks.filter((t) => !t.done);
+              const done = dayTasks.filter((t) => t.done);
+
+              if (dayTasks.length === 0) {
+                return <p className="text-sm text-stone-400 dark:text-stone-600 italic py-2">No to-dos yet. Add one below.</p>;
+              }
+
+              return (
+                <>
+                  {pending.map((task) => (
+                    <div key={task.id} className="group flex items-center gap-2.5">
+                      <button
+                        onClick={() => onToggleTask?.(task.id)}
+                        className="w-4 h-4 rounded border border-stone-300/60 dark:border-stone-600/50 hover:border-amber-400/70 dark:hover:border-amber-400/60 shrink-0 transition-colors flex items-center justify-center"
+                      />
+                      <span className="flex-1 text-sm text-stone-700 dark:text-stone-200 leading-snug">{task.text}</span>
+                      <button
+                        onClick={() => onDeleteTask?.(task.id)}
+                        className="opacity-0 group-hover:opacity-100 text-stone-400 dark:text-stone-600 hover:text-rose-400 transition-all text-xs shrink-0"
+                      >
+                        ✕
+                      </button>
+                    </div>
+                  ))}
+                  {done.length > 0 && pending.length > 0 && (
+                    <div className="border-t border-stone-200/40 dark:border-stone-800/30 my-1" />
+                  )}
+                  {done.map((task) => (
+                    <div key={task.id} className="group flex items-center gap-2.5">
+                      <button
+                        onClick={() => onToggleTask?.(task.id)}
+                        className="w-4 h-4 rounded border border-stone-200/50 dark:border-stone-700/40 bg-stone-100 dark:bg-stone-800 shrink-0 transition-colors flex items-center justify-center"
+                      >
+                        <svg width="8" height="6" viewBox="0 0 8 6" fill="none">
+                          <path d="M1 3l2 2 4-4" stroke="#a8a29e" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                        </svg>
+                      </button>
+                      <span className="flex-1 text-sm text-stone-400 dark:text-stone-600 line-through leading-snug">{task.text}</span>
+                      <button
+                        onClick={() => onDeleteTask?.(task.id)}
+                        className="opacity-0 group-hover:opacity-100 text-stone-300 dark:text-stone-700 hover:text-rose-400 transition-all text-xs shrink-0"
+                      >
+                        ✕
+                      </button>
+                    </div>
+                  ))}
+                </>
+              );
+            })()}
+          </div>
+
+          {/* Add task input */}
+          <div className="px-4 py-3 border-t border-stone-100/50 dark:border-stone-800/30">
+            <div className="flex items-center gap-2 rounded-xl border border-stone-200/40 dark:border-stone-800/30 bg-stone-50 dark:bg-stone-900/30 px-3 py-2 focus-within:border-stone-300/60 dark:focus-within:border-stone-700/40 transition-colors">
+              <input
+                autoFocus
+                placeholder="Add a to-do..."
+                value={todoInput}
+                onChange={(e) => setTodoInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && todoInput.trim()) {
+                    onAddTask?.(todoInput.trim(), todoPopupDate);
+                    setTodoInput('');
+                  }
+                }}
+                className="flex-1 bg-transparent text-sm text-stone-700 dark:text-stone-200 placeholder-stone-400 dark:placeholder-stone-600 outline-none"
+              />
+              {todoInput.trim() && (
+                <button
+                  onClick={() => {
+                    onAddTask?.(todoInput.trim(), todoPopupDate);
+                    setTodoInput('');
+                  }}
+                  className="text-xs text-amber-500 dark:text-amber-400 font-medium shrink-0 hover:text-amber-600 dark:hover:text-amber-300 transition-colors"
+                >
+                  Add
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+    )}
+
     {/* Calendar sidebar */}
     {googleConnected && googleCalendars.length > 0 && (
-      <div className="w-36 shrink-0 flex flex-col gap-1 pt-10">
-        <span className="text-[10px] font-semibold uppercase tracking-wider text-stone-400 dark:text-stone-600 mb-1">
-          Calendars
-        </span>
-        {googleCalendars.map((cal) => {
+      <div className={`shrink-0 flex flex-col gap-1 pt-10 transition-all duration-200 ${sidebarCollapsed ? 'w-6' : 'w-36'}`}>
+        <button
+          onClick={() => setSidebarCollapsed((p) => !p)}
+          className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider text-stone-400 dark:text-stone-600 mb-1 hover:text-stone-500 dark:hover:text-stone-500 transition-colors"
+          title={sidebarCollapsed ? 'Show calendars' : 'Hide calendars'}
+        >
+          <svg
+            width="10"
+            height="10"
+            viewBox="0 0 10 10"
+            fill="none"
+            className={`shrink-0 transition-transform duration-200 ${sidebarCollapsed ? 'rotate-180' : ''}`}
+          >
+            <path d="M7 2L4 5l3 3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+          {!sidebarCollapsed && <span>Calendars</span>}
+        </button>
+        {!sidebarCollapsed && googleCalendars.map((cal) => {
           const hidden = hiddenCalendars.has(cal.id);
           return (
             <button

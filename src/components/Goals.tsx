@@ -65,7 +65,7 @@ export default function Goals({ goals, onAdd, onEdit, onDelete }: Props) {
                         if (e.key === 'Enter') commitEdit(goal.id);
                         if (e.key === 'Escape') setEditingId(null);
                       }}
-                      className="flex-1 bg-transparent text-sm text-stone-800 dark:text-stone-100 outline-none border-b border-stone-300 dark:border-stone-600 focus:border-amber-500 pb-0.5 transition-colors"
+                      className="flex-1 bg-transparent text-sm text-stone-800 dark:text-stone-100 outline-none border-b border-stone-300/50 dark:border-stone-600/40 focus:border-amber-500/70 pb-0.5 transition-colors"
                     />
                   ) : (
                     <span
@@ -94,7 +94,7 @@ export default function Goals({ goals, onAdd, onEdit, onDelete }: Props) {
       )}
 
       {adding ? (
-        <div className="rounded-xl border border-stone-200 dark:border-stone-700/60 bg-stone-50 dark:bg-stone-900/40 p-3 flex flex-col gap-3">
+        <div className="rounded-xl border border-stone-200/40 dark:border-stone-700/30 bg-stone-50 dark:bg-stone-900/40 p-3 flex flex-col gap-3">
           <textarea
             autoFocus
             placeholder="Write your goal..."
@@ -114,7 +114,7 @@ export default function Goals({ goals, onAdd, onEdit, onDelete }: Props) {
                 className={`text-[10px] font-semibold uppercase tracking-widest px-2 py-0.5 rounded-full border transition-all ${
                   newCategory === cat.value
                     ? cat.color
-                    : 'text-stone-400 dark:text-stone-600 border-stone-300 dark:border-stone-700 bg-transparent'
+                    : 'text-stone-400 dark:text-stone-600 border-stone-300/50 dark:border-stone-700/40 bg-transparent'
                 }`}
               >
                 {cat.label}
@@ -130,7 +130,7 @@ export default function Goals({ goals, onAdd, onEdit, onDelete }: Props) {
             <button
               onClick={handleAdd}
               disabled={!newText.trim()}
-              className="text-xs font-medium px-3 py-1 rounded-lg bg-amber-500/20 text-amber-600 dark:text-amber-400 border border-amber-500/30 hover:bg-amber-500/30 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+              className="text-xs font-medium px-3 py-1 rounded-lg bg-amber-500/20 text-amber-600 dark:text-amber-400 border border-amber-500/20 hover:bg-amber-500/30 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
             >
               Add
             </button>

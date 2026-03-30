@@ -332,12 +332,12 @@ export default function CheckIn({
       <div
         className={`fixed right-0 top-0 h-full w-[420px] z-40 flex flex-col
           bg-[#faf7f2] dark:bg-[#141210]
-          border-l border-stone-200 dark:border-stone-800/80
+          border-l border-stone-200/40 dark:border-stone-800/30
           shadow-2xl transition-transform duration-300
           ${open ? "translate-x-0" : "translate-x-full"}`}
       >
         {/* Panel header */}
-        <div className="flex items-center justify-between px-5 py-4 border-b border-stone-200 dark:border-stone-800/80 shrink-0">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-stone-200/40 dark:border-stone-800/30 shrink-0">
           <div className="flex items-center gap-2.5">
             <div className="w-2 h-2 rounded-full bg-amber-500" />
             <span className="text-sm font-semibold text-stone-800 dark:text-stone-200 tracking-tight">
@@ -415,7 +415,7 @@ export default function CheckIn({
                         <div
                           className={`max-w-[88%] rounded-2xl px-4 py-2.5 text-sm leading-relaxed ${
                             isAssistant
-                              ? "bg-white dark:bg-stone-800 text-stone-700 dark:text-stone-300 border border-stone-200 dark:border-stone-700 rounded-tl-sm"
+                              ? "bg-white dark:bg-stone-800 text-stone-700 dark:text-stone-300 border border-stone-200/40 dark:border-stone-700/30 rounded-tl-sm"
                               : "bg-amber-500 text-white rounded-tr-sm"
                           }`}
                         >
@@ -428,7 +428,7 @@ export default function CheckIn({
                   {/* Live streaming bubble */}
                   {streaming && (
                     <div className="flex justify-start">
-                      <div className="max-w-[88%] bg-white dark:bg-stone-800 border border-stone-200 dark:border-stone-700 rounded-2xl rounded-tl-sm px-4 py-2.5 text-sm leading-relaxed text-stone-700 dark:text-stone-300">
+                      <div className="max-w-[88%] bg-white dark:bg-stone-800 border border-stone-200/40 dark:border-stone-700/30 rounded-2xl rounded-tl-sm px-4 py-2.5 text-sm leading-relaxed text-stone-700 dark:text-stone-300">
                         {streamingContent ? renderMarkdown(streamingContent) : <TypingDots />}
                       </div>
                     </div>
@@ -438,13 +438,13 @@ export default function CheckIn({
             </div>
 
             {/* Input */}
-            <div className="shrink-0 border-t border-stone-200 dark:border-stone-800/80 px-4 py-3">
+            <div className="shrink-0 border-t border-stone-200/40 dark:border-stone-800/30 px-4 py-3">
               {error && (
                 <p className="text-xs text-rose-500 dark:text-rose-400 mb-2 px-1">
                   {error}
                 </p>
               )}
-              <div className="flex items-center gap-2 rounded-xl border border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-800/60 px-3 py-2 focus-within:border-amber-400/60 dark:focus-within:border-amber-500/40 transition-colors">
+              <div className="flex items-center gap-2 rounded-xl border border-stone-200/40 dark:border-stone-700/30 bg-white dark:bg-stone-800/60 px-3 py-2 focus-within:border-amber-400/60 dark:focus-within:border-amber-500/40 transition-colors">
                 <input
                   ref={inputRef}
                   placeholder={streaming ? "Claude is thinking…" : "Reply…"}
