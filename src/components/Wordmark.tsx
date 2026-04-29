@@ -9,7 +9,7 @@ export default function Wordmark({ size = 18, className = "" }: Props) {
       className={className}
       style={{
         fontFamily: "Fraunces, Georgia, serif",
-        fontWeight: 600,
+        fontWeight: 700,
         fontSize: size,
         letterSpacing: "-0.01em",
       }}
@@ -19,7 +19,7 @@ export default function Wordmark({ size = 18, className = "" }: Props) {
         style={{
           fontFamily: "'Instrument Serif', Georgia, serif",
           fontStyle: "italic",
-          fontWeight: 500,
+          fontWeight: 600,
         }}
       >
         fire

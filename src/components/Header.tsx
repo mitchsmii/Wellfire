@@ -32,7 +32,7 @@ export default function Header({ theme, setTheme, onCheckinOpen, userEmail, onSi
       <div className="max-w-7xl mx-auto flex items-center justify-between">
         <div className="flex items-center gap-3">
           <Flame size={24} stroke="#f59e0b" />
-          <Wordmark size={18} className="text-stone-900 dark:text-stone-100" />
+          <Wordmark size={22} className="text-stone-900 dark:text-stone-50" />
         </div>
 
         <div className="flex items-center gap-3">
