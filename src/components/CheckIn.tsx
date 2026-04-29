@@ -23,38 +23,23 @@ function formatTime12(t: string) {
   return `${h % 12 || 12}:${String(m).padStart(2, "0")}${period}`;
 }
 
-function buildSystemPrompt(
-  goals: Goal[],
-  tasks: Task[],
-  blocks: TimeBlock[],
-  intention: string,
-): string {
+function buildSystemPrompt(goals: Goal[], tasks: Task[], blocks: TimeBlock[], intention: string): string {
   const goalsText =
     goals.length === 0
       ? "  (none set)"
       : [
-          ...goals
-            .filter((g) => g.category === "big-picture")
-            .map((g) => `  Big picture: ${g.text}`),
-          ...goals
-            .filter((g) => g.category === "monthly")
-            .map((g) => `  This month: ${g.text}`),
-          ...goals
-            .filter((g) => g.category === "weekly")
-            .map((g) => `  This week: ${g.text}`),
+          ...goals.filter((g) => g.category === "big-picture").map((g) => `  Big picture: ${g.text}`),
+          ...goals.filter((g) => g.category === "monthly").map((g) => `  This month: ${g.text}`),
+          ...goals.filter((g) => g.category === "weekly").map((g) => `  This week: ${g.text}`),
         ].join("\n");
 
   const pending = tasks.filter((t) => !t.done);
   const done = tasks.filter((t) => t.done);
-  const pendingText = pending.length
-    ? pending.map((t) => `  • ${t.text}`).join("\n")
-    : "  (none)";
-  const doneText = done.length
-    ? done.map((t) => `  • ${t.text}`).join("\n")
-    : "  (none)";
+  const pendingText = pending.length ? pending.map((t) => `  • ${t.text}`).join("\n") : "  (none)";
+  const doneText = done.length ? done.map((t) => `  • ${t.text}`).join("\n") : "  (none)";
 
   const now = new Date();
-  const todayISO = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+  const todayISO = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
   const today = now.toLocaleDateString("en-US", {
     weekday: "long",
     month: "long",
@@ -67,9 +52,7 @@ function buildSystemPrompt(
     .filter((b) => b.date === todayISO)
     .sort((a, b) => a.startTime.localeCompare(b.startTime));
   const todayScheduleText = todayBlocks.length
-    ? todayBlocks
-        .map((b) => `  ${formatTime12(b.startTime)}–${formatTime12(b.endTime)}: ${b.title}`)
-        .join("\n")
+    ? todayBlocks.map((b) => `  ${formatTime12(b.startTime)}–${formatTime12(b.endTime)}: ${b.title}`).join("\n")
     : "  (nothing scheduled)";
 
   const weekBlocks = datedBlocks
@@ -78,7 +61,7 @@ function buildSystemPrompt(
   const weekScheduleText = weekBlocks.length
     ? weekBlocks
         .map((b) => {
-          const d = new Date(b.date + 'T00:00');
+          const d = new Date(b.date + "T00:00");
           return `  ${DAY_LABELS[d.getDay()]} ${formatTime12(b.startTime)}–${formatTime12(b.endTime)}: ${b.title}`;
         })
         .join("\n")
@@ -156,9 +139,7 @@ function renderMarkdown(text: string) {
     } else if (line.trim() === "") {
       elements.push(<div key={i} className="h-2" />);
     } else {
-      elements.push(
-        <p key={i}>{renderInline(line)}</p>,
-      );
+      elements.push(<p key={i}>{renderInline(line)}</p>);
     }
   }
 
@@ -193,14 +174,7 @@ function TypingDots() {
   );
 }
 
-export default function CheckIn({
-  open,
-  onClose,
-  goals,
-  tasks,
-  blocks,
-  intention,
-}: Props) {
+export default function CheckIn({ open, onClose, goals, tasks, blocks, intention }: Props) {
   const [started, setStarted] = useState(false);
   const [messages, setMessages] = useState<MessageParam[]>([]);
   const [streamingContent, setStreamingContent] = useState("");
@@ -209,7 +183,7 @@ export default function CheckIn({
   const [error, setError] = useState("");
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
-  const systemPromptRef = useRef('');
+  const systemPromptRef = useRef("");
 
   // Auto-scroll to bottom as content streams in
   useEffect(() => {
@@ -239,7 +213,10 @@ export default function CheckIn({
       const res = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ system: systemPromptRef.current, messages: apiMessages }),
+        body: JSON.stringify({
+          system: systemPromptRef.current,
+          messages: apiMessages,
+        }),
       });
 
       const reader = res.body!.getReader();
@@ -280,10 +257,7 @@ export default function CheckIn({
       // Flush any remaining data in the buffer
       if (buffer.trim()) processLine(buffer);
 
-      setMessages((prev) => [
-        ...prev,
-        { role: "assistant", content: finalText },
-      ]);
+      setMessages((prev) => [...prev, { role: "assistant", content: finalText }]);
       setStreamingContent("");
     } catch {
       const msg = "Could not reach the server. Is it running?";
@@ -304,9 +278,13 @@ export default function CheckIn({
       weekStart.setDate(now.getDate() - now.getDay());
       const weekEnd = new Date(weekStart);
       weekEnd.setDate(weekStart.getDate() + 7);
-      const res = await fetch(`/api/google/calendar/events?start=${weekStart.toISOString()}&end=${weekEnd.toISOString()}`);
+      const res = await fetch(
+        `/api/google/calendar/events?start=${weekStart.toISOString()}&end=${weekEnd.toISOString()}`,
+      );
       if (res.ok) googleBlocks = await res.json();
-    } catch { /* continue without google events */ }
+    } catch {
+      /* continue without google events */
+    }
 
     const allBlocks = [...blocks, ...googleBlocks];
     systemPromptRef.current = buildSystemPrompt(goals, tasks, allBlocks, intention);
@@ -323,8 +301,7 @@ export default function CheckIn({
 
   // Skip the auto-sent kickoff message from the visible conversation
   const displayMessages = messages.slice(1);
-  const isFirstResponseStreaming =
-    started && messages.length === 1 && streaming;
+  const isFirstResponseStreaming = started && messages.length === 1 && streaming;
 
   return (
     <>
@@ -356,24 +333,13 @@ export default function CheckIn({
         {!started ? (
           /* Pre-start state */
           <div className="flex-1 flex flex-col items-center justify-center gap-8 px-8 text-center">
-            <svg
-              viewBox="0 0 48 48"
-              fill="none"
-              className="w-10 h-10 opacity-60"
-            >
+            <svg viewBox="0 0 48 48" fill="none" className="w-10 h-10 opacity-60">
               <path
                 d="M24 6C24 6 14 18 14 28a10 10 0 0020 0c0-5-4-9-4-9s-1 5-4 7c6-7 2-21 2-21z"
                 fill="url(#flame-lg)"
               />
               <defs>
-                <linearGradient
-                  id="flame-lg"
-                  x1="24"
-                  y1="6"
-                  x2="24"
-                  y2="40"
-                  gradientUnits="userSpaceOnUse"
-                >
+                <linearGradient id="flame-lg" x1="24" y1="6" x2="24" y2="40" gradientUnits="userSpaceOnUse">
                   <stop stopColor="#f59e0b" />
                   <stop offset="1" stopColor="#ef4444" />
                 </linearGradient>
@@ -384,8 +350,7 @@ export default function CheckIn({
                 Your AI already knows your goals, intention, and today's tasks.
               </p>
               <p className="text-xs text-stone-400 dark:text-stone-600 leading-relaxed">
-                It'll greet you, ask how yesterday went, and help you think
-                clearly about your day.
+                It'll greet you, ask how yesterday went, and help you think clearly about your day.
               </p>
             </div>
             <button
@@ -398,20 +363,14 @@ export default function CheckIn({
         ) : (
           /* Active conversation */
           <>
-            <div
-              ref={scrollRef}
-              className="flex-1 overflow-y-auto px-4 py-5 flex flex-col gap-4"
-            >
+            <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 py-5 flex flex-col gap-4">
               {/* Claude's greeting streams in first */}
               {(isFirstResponseStreaming || displayMessages.length > 0) && (
                 <>
                   {displayMessages.map((msg, i) => {
                     const isAssistant = msg.role === "assistant";
                     return (
-                      <div
-                        key={i}
-                        className={`flex ${isAssistant ? "justify-start" : "justify-end"}`}
-                      >
+                      <div key={i} className={`flex ${isAssistant ? "justify-start" : "justify-end"}`}>
                         <div
                           className={`max-w-[88%] rounded-2xl px-4 py-2.5 text-sm leading-relaxed ${
                             isAssistant
@@ -439,11 +398,7 @@ export default function CheckIn({
 
             {/* Input */}
             <div className="shrink-0 border-t border-stone-200/40 dark:border-stone-800/30 px-4 py-3">
-              {error && (
-                <p className="text-xs text-rose-500 dark:text-rose-400 mb-2 px-1">
-                  {error}
-                </p>
-              )}
+              {error && <p className="text-xs text-rose-500 dark:text-rose-400 mb-2 px-1">{error}</p>}
               <div className="flex items-center gap-2 rounded-xl border border-stone-200/40 dark:border-stone-700/30 bg-white dark:bg-stone-800/60 px-3 py-2 focus-within:border-amber-400/60 dark:focus-within:border-amber-500/40 transition-colors">
                 <input
                   ref={inputRef}

@@ -1,0 +1,360 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<title>Wellfire — Logo explorations</title>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500&family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<style>
+  html,body{margin:0;padding:0;background:#f0eee9;-webkit-font-smoothing:antialiased;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;}
+  .serif{font-family:'Fraunces',Georgia,serif;}
+  .italic-serif{font-family:'Instrument Serif',Georgia,serif;font-style:italic;}
+  .cormorant{font-family:'Cormorant Garamond',Georgia,serif;}
+  * { box-sizing: border-box; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel" src="design-canvas.jsx"></script>
+<script type="text/babel" data-presets="react">
+
+/* Each logo: returns the ICON only, rendered at whatever size the frame needs.
+   We present each at three sizes (hero 72px, header 24px, favicon 16px) on both
+   light and dark backgrounds, with a matching wordmark treatment. */
+
+const { useState } = React;
+
+/* ============================================================
+   LOGO A — EMBER CORE
+   A soft flame with a brighter inner ember teardrop.
+   More personality than a plain silhouette; still warm & quiet.
+============================================================ */
+function LogoA({ size=64 }){
+  return (
+    <svg viewBox="0 0 64 64" width={size} height={size} fill="none">
+      <defs>
+        <linearGradient id={`a-outer-${size}`} x1="32" y1="6" x2="32" y2="58" gradientUnits="userSpaceOnUse">
+          <stop stopColor="#fbbf24"/><stop offset="0.55" stopColor="#f97316"/><stop offset="1" stopColor="#dc2626"/>
+        </linearGradient>
+        <linearGradient id={`a-inner-${size}`} x1="32" y1="24" x2="32" y2="50" gradientUnits="userSpaceOnUse">
+          <stop stopColor="#fef3c7"/><stop offset="1" stopColor="#fbbf24"/>
+        </linearGradient>
+      </defs>
+      {/* Outer flame — asymmetric curl */}
+      <path d="M32 6 C32 6, 18 18, 18 34 C18 46, 24 56, 32 56 C40 56, 46 46, 46 34 C46 26, 42 22, 42 22 C42 26, 40 30, 37 32 C39 24, 32 6, 32 6 Z"
+        fill={`url(#a-outer-${size})`}/>
+      {/* Inner ember — teardrop */}
+      <path d="M32 30 C32 30, 26 36, 26 44 C26 50, 29 54, 32 54 C35 54, 38 50, 38 44 C38 38, 32 30, 32 30 Z"
+        fill={`url(#a-inner-${size})`} opacity="0.95"/>
+    </svg>
+  );
+}
+
+/* ============================================================
+   LOGO B — HEARTH
+   A flame sitting on a small horizontal "log" line — grounded,
+   domestic, "home fire" feeling. Warmth + stability.
+============================================================ */
+function LogoB({ size=64 }){
+  return (
+    <svg viewBox="0 0 64 64" width={size} height={size} fill="none">
+      <defs>
+        <linearGradient id={`b-fl-${size}`} x1="32" y1="8" x2="32" y2="48" gradientUnits="userSpaceOnUse">
+          <stop stopColor="#fbbf24"/><stop offset="1" stopColor="#ea580c"/>
+        </linearGradient>
+      </defs>
+      <path d="M32 8 C32 8, 20 20, 20 34 C20 43, 25 50, 32 50 C39 50, 44 43, 44 34 C44 28, 41 25, 41 25 C41 28, 39 32, 36 34 C37 26, 32 8, 32 8 Z"
+        fill={`url(#b-fl-${size})`}/>
+      {/* Hearth log */}
+      <rect x="14" y="54" width="36" height="3" rx="1.5" fill="#78716c"/>
+      <rect x="18" y="54" width="28" height="3" rx="1.5" fill="#44403c" opacity="0.5"/>
+    </svg>
+  );
+}
+
+/* ============================================================
+   LOGO C — MONOLINE FLAME
+   Single-stroke, open-form flame. Calm, refined, adapts to
+   any color (theme-aware). Quietest option.
+============================================================ */
+function LogoC({ size=64, stroke='#c2410c' }){
+  const w = Math.max(2, size*0.05);
+  return (
+    <svg viewBox="0 0 64 64" width={size} height={size} fill="none">
+      <path d="M32 10 C32 10, 20 22, 20 36 C20 46, 25 54, 32 54 C39 54, 44 46, 44 36 C44 29, 40 25, 40 25"
+        stroke={stroke} strokeWidth={w} strokeLinecap="round" strokeLinejoin="round" fill="none"/>
+      <path d="M32 10 C34 22, 40 28, 37 34 C35 37, 32 38, 32 38"
+        stroke={stroke} strokeWidth={w} strokeLinecap="round" strokeLinejoin="round" fill="none"/>
+    </svg>
+  );
+}
+
+/* ============================================================
+   LOGO D — CUPPED FLAME
+   A flame cradled by a soft curve — "holding space".
+   Gentle and protective. Great for a wellness product.
+============================================================ */
+function LogoD({ size=64 }){
+  return (
+    <svg viewBox="0 0 64 64" width={size} height={size} fill="none">
+      <defs>
+        <linearGradient id={`d-fl-${size}`} x1="32" y1="12" x2="32" y2="44" gradientUnits="userSpaceOnUse">
+          <stop stopColor="#fbbf24"/><stop offset="1" stopColor="#ea580c"/>
+        </linearGradient>
+      </defs>
+      {/* Cup curve */}
+      <path d="M10 34 C10 48, 20 56, 32 56 C44 56, 54 48, 54 34"
+        stroke="#a16207" strokeWidth="3" strokeLinecap="round" fill="none" opacity="0.35"/>
+      {/* Flame inside */}
+      <path d="M32 12 C32 12, 23 20, 23 32 C23 40, 27 46, 32 46 C37 46, 41 40, 41 32 C41 28, 39 25, 39 25 C39 27, 37 30, 35 31 C36 24, 32 12, 32 12 Z"
+        fill={`url(#d-fl-${size})`}/>
+    </svg>
+  );
+}
+
+/* ============================================================
+   LOGO E — SPARK BLOOM
+   A flame with three ascending sparks/embers floating off.
+   Adds motion + personality without being loud.
+============================================================ */
+function LogoE({ size=64 }){
+  return (
+    <svg viewBox="0 0 64 64" width={size} height={size} fill="none">
+      <defs>
+        <linearGradient id={`e-fl-${size}`} x1="30" y1="16" x2="30" y2="56" gradientUnits="userSpaceOnUse">
+          <stop stopColor="#fbbf24"/><stop offset="1" stopColor="#dc2626"/>
+        </linearGradient>
+      </defs>
+      {/* Flame slightly off-center */}
+      <path d="M28 16 C28 16, 17 26, 17 40 C17 50, 22 57, 29 57 C37 57, 42 50, 42 40 C42 34, 39 30, 39 30 C39 33, 37 36, 34 37 C35 30, 28 16, 28 16 Z"
+        fill={`url(#e-fl-${size})`}/>
+      {/* Sparks */}
+      <circle cx="47" cy="22" r="2.2" fill="#fbbf24"/>
+      <circle cx="52" cy="13" r="1.4" fill="#f97316"/>
+      <circle cx="44" cy="10" r="1" fill="#fde68a"/>
+    </svg>
+  );
+}
+
+/* ============================================================
+   LOGO F — W-FLAME LIGATURE
+   The 'W' of Wellfire interpreted as three flame tongues.
+   Bold + iconic. Doubles as a mark when wordmark is hidden.
+============================================================ */
+function LogoF({ size=64 }){
+  return (
+    <svg viewBox="0 0 64 64" width={size} height={size} fill="none">
+      <defs>
+        <linearGradient id={`f-fl-${size}`} x1="32" y1="8" x2="32" y2="56" gradientUnits="userSpaceOnUse">
+          <stop stopColor="#fbbf24"/><stop offset="0.5" stopColor="#f97316"/><stop offset="1" stopColor="#dc2626"/>
+        </linearGradient>
+      </defs>
+      {/* Three flame tongues forming a W */}
+      <path d="M14 14 C14 14, 11 26, 15 36 C18 44, 22 48, 22 48 C22 48, 20 40, 22 34 C24 28, 20 22, 20 22 Z"
+        fill={`url(#f-fl-${size})`} opacity="0.85"/>
+      <path d="M32 8 C32 8, 26 22, 30 36 C32 44, 32 56, 32 56 C32 56, 32 44, 34 36 C38 22, 32 8, 32 8 Z"
+        fill={`url(#f-fl-${size})`}/>
+      <path d="M50 14 C50 14, 53 26, 49 36 C46 44, 42 48, 42 48 C42 48, 44 40, 42 34 C40 28, 44 22, 44 22 Z"
+        fill={`url(#f-fl-${size})`} opacity="0.85"/>
+    </svg>
+  );
+}
+
+/* ============================================================
+   WORDMARK — Shared treatment
+   Fraunces (serif, warm, contemporary) for the wordmark,
+   with a subtle italic 'f' optional.
+============================================================ */
+function Wordmark({ color='#1c1917', serif=true, italicF=false, size=28, weight=600 }){
+  if(!serif){
+    return <span style={{color, fontFamily:'-apple-system,system-ui,sans-serif', fontWeight:weight, fontSize:size, letterSpacing:'-0.02em'}}>Wellfire</span>;
+  }
+  if(italicF){
+    return (
+      <span style={{color, fontFamily:'Fraunces,serif', fontWeight:weight, fontSize:size, letterSpacing:'-0.01em'}}>
+        Well<span style={{fontFamily:'Instrument Serif,serif', fontStyle:'italic', fontWeight:500}}>fire</span>
+      </span>
+    );
+  }
+  return <span style={{color, fontFamily:'Fraunces,serif', fontWeight:weight, fontSize:size, letterSpacing:'-0.01em'}}>Wellfire</span>;
+}
+
+/* ============================================================
+   LOCKUP — icon + wordmark side by side
+============================================================ */
+function Lockup({ Logo, logoProps={}, iconSize=40, dark=false, italicF=false }){
+  return (
+    <div style={{display:'flex',alignItems:'center',gap:12}}>
+      <Logo size={iconSize} {...logoProps}/>
+      <Wordmark color={dark?'#f5f5f4':'#1c1917'} size={iconSize*0.75} italicF={italicF}/>
+    </div>
+  );
+}
+
+/* ============================================================
+   PRESENTATION CARD
+   Shows one logo at three scales, on light+dark.
+============================================================ */
+function LogoCard({ title, blurb, Logo, logoProps={}, italicF=false }){
+  return (
+    <div style={{width:420}}>
+      <div style={{marginBottom:14}}>
+        <div style={{fontSize:11,fontWeight:700,letterSpacing:'0.18em',textTransform:'uppercase',color:'#c2410c',marginBottom:4}}>{title}</div>
+        <div style={{fontSize:13,color:'rgba(40,30,20,0.65)',lineHeight:1.45}}>{blurb}</div>
+      </div>
+
+      {/* Big hero — light */}
+      <div style={{background:'#faf7f2',borderRadius:12,padding:'28px 28px 20px',display:'flex',flexDirection:'column',gap:18,border:'1px solid rgba(0,0,0,0.05)'}}>
+        <div style={{display:'flex',alignItems:'center',justifyContent:'center',padding:'20px 0'}}>
+          <Lockup Logo={Logo} logoProps={logoProps} iconSize={64} italicF={italicF}/>
+        </div>
+        <div style={{height:1,background:'rgba(0,0,0,0.06)'}}/>
+        {/* Header + favicon + standalone mark */}
+        <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:20}}>
+          <Lockup Logo={Logo} logoProps={logoProps} iconSize={24} italicF={italicF}/>
+          <div style={{display:'flex',alignItems:'center',gap:14}}>
+            <div style={{display:'flex',flexDirection:'column',alignItems:'center',gap:4}}>
+              <div style={{width:32,height:32,background:'#fff',borderRadius:6,display:'flex',alignItems:'center',justifyContent:'center',border:'1px solid rgba(0,0,0,0.06)'}}>
+                <Logo size={20} {...logoProps}/>
+              </div>
+              <div style={{fontSize:8,color:'rgba(0,0,0,0.4)',letterSpacing:'0.08em',textTransform:'uppercase'}}>favicon</div>
+            </div>
+            <div style={{display:'flex',flexDirection:'column',alignItems:'center',gap:4}}>
+              <div style={{width:32,height:32,background:'#fff',borderRadius:6,display:'flex',alignItems:'center',justifyContent:'center',border:'1px solid rgba(0,0,0,0.06)'}}>
+                <Logo size={14} {...logoProps}/>
+              </div>
+              <div style={{fontSize:8,color:'rgba(0,0,0,0.4)',letterSpacing:'0.08em',textTransform:'uppercase'}}>16px</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Dark variant */}
+      <div style={{background:'#0f0e0c',borderRadius:12,padding:'24px 28px',marginTop:10,display:'flex',alignItems:'center',justifyContent:'space-between'}}>
+        <Lockup Logo={Logo} logoProps={logoProps} iconSize={32} dark italicF={italicF}/>
+        <div style={{fontSize:10,color:'rgba(255,255,255,0.3)',letterSpacing:'0.18em',textTransform:'uppercase'}}>on dark</div>
+      </div>
+    </div>
+  );
+}
+
+/* ============================================================
+   CURRENT LOGO — reference
+============================================================ */
+function LogoCurrent({ size=64 }){
+  return (
+    <svg viewBox="0 0 28 28" width={size} height={size} fill="none">
+      <path d="M14 3C14 3 8 9 8 15a6 6 0 0012 0c0-3-2-5-2-5s-.5 2.5-2 3.5C17 11 14 3 14 3z" fill={`url(#cur-${size})`}/>
+      <defs>
+        <linearGradient id={`cur-${size}`} x1="14" y1="3" x2="14" y2="22" gradientUnits="userSpaceOnUse">
+          <stop stopColor="#f59e0b"/><stop offset="1" stopColor="#ef4444"/>
+        </linearGradient>
+      </defs>
+    </svg>
+  );
+}
+
+/* ============================================================
+   APP
+============================================================ */
+function App(){
+  return (
+    <DesignCanvas>
+      {/* Title */}
+      <div style={{padding:'0 60px 40px',maxWidth:900}}>
+        <div style={{fontSize:11,fontWeight:700,letterSpacing:'0.24em',textTransform:'uppercase',color:'#c2410c',marginBottom:8}}>Logo explorations</div>
+        <div className="serif" style={{fontSize:42,fontWeight:600,color:'#1c1917',letterSpacing:'-0.02em',lineHeight:1.1,marginBottom:12}}>
+          A warmer, quieter Wellfire flame
+        </div>
+        <div style={{fontSize:15,color:'rgba(40,30,20,0.7)',lineHeight:1.55,maxWidth:620}}>
+          Keeping the flame — adding personality. Six directions, each shown as a hero lockup, a small header treatment, a 20px favicon and 14px micro-mark, then inverted on dark. The wordmark across all options moves from plain sans to <span className="serif" style={{fontWeight:600}}>Fraunces</span> — a warm, contemporary serif that pairs with "well-being" better than the current system sans.
+        </div>
+        <div style={{display:'flex',alignItems:'center',gap:24,marginTop:28,padding:'16px 20px',background:'#fff',borderRadius:10,border:'1px solid rgba(0,0,0,0.06)',width:'fit-content'}}>
+          <div style={{display:'flex',flexDirection:'column',alignItems:'center',gap:6}}>
+            <LogoCurrent size={40}/>
+            <div style={{fontSize:9,color:'rgba(0,0,0,0.5)',letterSpacing:'0.12em',textTransform:'uppercase'}}>Current</div>
+          </div>
+          <div style={{height:40,width:1,background:'rgba(0,0,0,0.1)'}}/>
+          <div style={{fontSize:13,color:'rgba(40,30,20,0.65)',lineHeight:1.5,maxWidth:380}}>
+            Generic flame silhouette, no anatomy. Reads as "fire emoji" at small sizes. Goal: keep warmth, add a distinguishing feature.
+          </div>
+        </div>
+      </div>
+
+      <DCSection title="Six directions" subtitle="Hover / pan with trackpad · pinch-zoom to inspect">
+        <LogoCard
+          title="A · Ember core"
+          blurb="A soft flame wrapping a brighter ember teardrop — the inner glow gives it anatomy. Most personality while still reading as a flame at 16px."
+          Logo={LogoA}/>
+        <LogoCard
+          title="B · Hearth"
+          blurb="Flame resting on a small log — a literal hearth. Reads as 'home fire'; grounds the brand in domesticity and ritual."
+          Logo={LogoB}/>
+        <LogoCard
+          title="C · Monoline"
+          blurb="Open-stroke, single-weight flame — the quietest option. Adapts to any color and looks at home next to stroke icons in the sidebar."
+          Logo={LogoC}
+          italicF/>
+      </DCSection>
+
+      <DCSection title="" subtitle="" gap={48}>
+        <LogoCard
+          title="D · Cupped"
+          blurb="A flame cradled by a soft curve — 'holding space'. Protective, gentle, specifically wellness-coded without being saccharine."
+          Logo={LogoD}
+          italicF/>
+        <LogoCard
+          title="E · Spark bloom"
+          blurb="Off-center flame with three ascending sparks. Suggests a little motion and creative energy — the one with the most 'fire starting' feeling."
+          Logo={LogoE}/>
+        <LogoCard
+          title="F · W-flame ligature"
+          blurb="Three flame tongues arranged as a 'W'. Becomes a real mark — works standalone in app icons and in places the wordmark is hidden."
+          Logo={LogoF}/>
+      </DCSection>
+
+      {/* Header comparison strip */}
+      <div style={{padding:'0 60px 40px',maxWidth:1200}}>
+        <div style={{fontSize:22,fontWeight:600,color:'rgba(40,30,20,0.85)',letterSpacing:-0.3,marginBottom:6}}>In context — app header</div>
+        <div style={{fontSize:14,color:'rgba(60,50,40,0.6)',marginBottom:24}}>How each sits in the actual Wellfire dark header.</div>
+        <div style={{display:'flex',flexDirection:'column',gap:10,background:'#0f0e0c',borderRadius:14,padding:20,border:'1px solid rgba(255,255,255,0.05)'}}>
+          {[
+            {name:'Current',Logo:LogoCurrent,italicF:false},
+            {name:'A · Ember core',Logo:LogoA,italicF:false},
+            {name:'B · Hearth',Logo:LogoB,italicF:false},
+            {name:'C · Monoline',Logo:LogoC,italicF:true,props:{stroke:'#fbbf24'}},
+            {name:'D · Cupped',Logo:LogoD,italicF:true},
+            {name:'E · Spark bloom',Logo:LogoE,italicF:false},
+            {name:'F · W-flame',Logo:LogoF,italicF:false},
+          ].map(row=>(
+            <div key={row.name} style={{display:'grid',gridTemplateColumns:'140px 1fr',alignItems:'center',gap:24,padding:'14px 16px',borderBottom:'1px solid rgba(255,255,255,0.05)'}}>
+              <div style={{fontSize:11,color:'rgba(255,255,255,0.45)',letterSpacing:'0.1em',textTransform:'uppercase'}}>{row.name}</div>
+              <div style={{display:'flex',alignItems:'center',justifyContent:'space-between'}}>
+                <Lockup Logo={row.Logo} logoProps={row.props||{}} iconSize={24} dark italicF={row.italicF}/>
+                <div style={{display:'flex',alignItems:'center',gap:10,fontSize:11,color:'rgba(255,255,255,0.4)'}}>
+                  <span style={{padding:'5px 10px',borderRadius:6,background:'rgba(251,191,36,0.1)',color:'#fbbf24',border:'1px solid rgba(251,191,36,0.2)'}}>✦ Morning check-in</span>
+                  <span>Good morning, Sam</span>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <DCPostIt top={80} right={80} rotate={3} width={220}>
+        My pick: <b>A (Ember core)</b> for hero, <b>C (Monoline)</b> at small sizes. They share DNA and can coexist.
+      </DCPostIt>
+
+    </DesignCanvas>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+</script>
+</body>
+</html>

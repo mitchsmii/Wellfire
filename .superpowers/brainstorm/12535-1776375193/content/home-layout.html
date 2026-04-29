@@ -1,0 +1,73 @@
+<h2>How should today's content be arranged?</h2>
+<p class="subtitle">Three high-level layouts. Intention bar stays pinned at top in all three. The week peek + top goals appear as thin "at-a-glance" strips.</p>
+
+<div class="cards">
+  <div class="card" data-choice="a" onclick="toggleSelect(this)">
+    <div class="card-image">
+      <div class="mockup" style="margin:0">
+        <div class="mockup-header">A — Split hero (equal weight)</div>
+        <div class="mockup-body" style="padding:10px">
+          <div class="placeholder" style="height:26px;margin-bottom:8px;background:#fef3c7;color:#92400e">Today's intention</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
+            <div class="placeholder" style="height:170px">Today's tasks</div>
+            <div class="placeholder" style="height:170px">Today's calendar</div>
+          </div>
+          <div style="display:grid;grid-template-columns:2fr 1fr;gap:8px">
+            <div class="placeholder" style="height:40px">Week at-a-glance</div>
+            <div class="placeholder" style="height:40px">Top goals</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>A — Split hero</h3>
+      <p>Tasks and calendar sit side-by-side, equal weight. You see everything about today in one glance.</p>
+    </div>
+  </div>
+
+  <div class="card" data-choice="b" onclick="toggleSelect(this)">
+    <div class="card-image">
+      <div class="mockup" style="margin:0">
+        <div class="mockup-header">B — Calendar-dominant</div>
+        <div class="mockup-body" style="padding:10px">
+          <div class="placeholder" style="height:26px;margin-bottom:8px;background:#fef3c7;color:#92400e">Today's intention</div>
+          <div style="display:grid;grid-template-columns:220px 1fr 180px;gap:8px">
+            <div style="display:flex;flex-direction:column;gap:8px">
+              <div class="placeholder" style="height:120px">Today's tasks</div>
+              <div class="placeholder" style="height:60px">Top goals</div>
+            </div>
+            <div class="placeholder" style="height:220px">Today's calendar (timeline)</div>
+            <div class="placeholder" style="height:220px">Week at-a-glance</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>B — Calendar-dominant</h3>
+      <p>The day's timeline is the main canvas. Tasks and goals live in a narrow left column; week peek is a right rail.</p>
+    </div>
+  </div>
+
+  <div class="card" data-choice="c" onclick="toggleSelect(this)">
+    <div class="card-image">
+      <div class="mockup" style="margin:0">
+        <div class="mockup-header">C — Task-dominant</div>
+        <div class="mockup-body" style="padding:10px">
+          <div class="placeholder" style="height:26px;margin-bottom:8px;background:#fef3c7;color:#92400e">Today's intention</div>
+          <div style="display:grid;grid-template-columns:1.6fr 1fr;gap:8px;margin-bottom:8px">
+            <div class="placeholder" style="height:200px">Today's tasks (large)</div>
+            <div class="placeholder" style="height:200px">Today's calendar (compact)</div>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+            <div class="placeholder" style="height:48px">Top goals</div>
+            <div class="placeholder" style="height:48px">Week at-a-glance</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>C — Task-dominant</h3>
+      <p>Task list is the largest element. Calendar is narrower and on the right. Goals + week peek are equal strips below.</p>
+    </div>
+  </div>
+</div>

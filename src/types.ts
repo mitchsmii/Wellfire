@@ -1,8 +1,9 @@
 export interface Goal {
   id: string;
   text: string;
-  category: 'weekly' | 'monthly' | 'big-picture';
+  category: "weekly" | "monthly" | "big-picture";
   createdAt: number;
+  progress?: number;
 }
 
 export interface TimeBlock {
@@ -12,7 +13,7 @@ export interface TimeBlock {
   endTime: string;
   color?: string;
   date: string; // ISO date string, e.g. "2026-03-21"
-  source?: 'local' | 'google';
+  source?: "local" | "google";
   googleEventId?: string;
   googleCalendarId?: string;
 }
@@ -30,4 +31,5 @@ export interface Task {
   done: boolean;
   createdAt: number;
   date?: string; // ISO date string, e.g. "2026-03-21" — undefined means today's general to-do
+  goalId?: string;
 }

@@ -1,27 +1,56 @@
-import { useState } from 'react';
-import type { Task } from '../types';
+import { useState } from "react";
+import type { Task } from "../types";
 
 interface Props {
   tasks: Task[];
-  onAdd: (text: string) => void;
+  onAdd: (text: string, date?: string) => void;
   onToggle: (id: string) => void;
   onDelete: (id: string) => void;
+  defaultDate?: string;
+  onDropTask?: (taskId: string) => void;
 }
 
-export default function TodoList({ tasks, onAdd, onToggle, onDelete }: Props) {
-  const [input, setInput] = useState('');
+export default function TodoList({ tasks, onAdd, onToggle, onDelete, defaultDate, onDropTask }: Props) {
+  const [input, setInput] = useState("");
+  const [dragOver, setDragOver] = useState(false);
 
   const pending = tasks.filter((t) => !t.done);
   const done = tasks.filter((t) => t.done);
 
   function handleAdd() {
     if (!input.trim()) return;
-    onAdd(input.trim());
-    setInput('');
+    onAdd(input.trim(), defaultDate);
+    setInput("");
+  }
+
+  function handleDragOver(e: React.DragEvent) {
+    if (!onDropTask) return;
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "move";
+    if (!dragOver) setDragOver(true);
+  }
+
+  function handleDragLeave() {
+    if (dragOver) setDragOver(false);
+  }
+
+  function handleDrop(e: React.DragEvent) {
+    if (!onDropTask) return;
+    e.preventDefault();
+    const taskId = e.dataTransfer.getData("text/plain");
+    if (taskId) onDropTask(taskId);
+    setDragOver(false);
   }
 
   return (
-    <div className="flex flex-col gap-3">
+    <div
+      onDragOver={handleDragOver}
+      onDragLeave={handleDragLeave}
+      onDrop={handleDrop}
+      className={`flex flex-col gap-3 rounded-lg transition-colors ${
+        dragOver ? "bg-amber-50/60 dark:bg-amber-500/5 ring-2 ring-amber-400/40" : ""
+      }`}
+    >
       {tasks.length === 0 && (
         <p className="text-sm text-stone-400 dark:text-stone-600 italic">Nothing on the list yet. What needs doing?</p>
       )}
@@ -69,7 +98,9 @@ export default function TodoList({ tasks, onAdd, onToggle, onDelete }: Props) {
                     />
                   </svg>
                 </button>
-                <span className="flex-1 text-sm text-stone-400 dark:text-stone-600 line-through leading-snug">{task.text}</span>
+                <span className="flex-1 text-sm text-stone-400 dark:text-stone-600 line-through leading-snug">
+                  {task.text}
+                </span>
                 <button
                   onClick={() => onDelete(task.id)}
                   className="opacity-0 group-hover:opacity-100 text-stone-300 dark:text-stone-700 hover:text-rose-400 transition-all text-xs shrink-0"
@@ -90,7 +121,7 @@ export default function TodoList({ tasks, onAdd, onToggle, onDelete }: Props) {
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={(e) => {
-              if (e.key === 'Enter') handleAdd();
+              if (e.key === "Enter") handleAdd();
             }}
             className="flex-1 bg-transparent text-sm text-stone-700 dark:text-stone-200 placeholder-stone-400 dark:placeholder-stone-600 outline-none"
           />
@@ -107,9 +138,7 @@ export default function TodoList({ tasks, onAdd, onToggle, onDelete }: Props) {
 
       {tasks.length > 0 && (
         <p className="text-[11px] text-stone-400 dark:text-stone-700">
-          {pending.length === 0
-            ? 'All done — great work.'
-            : `${done.length} of ${tasks.length} done`}
+          {pending.length === 0 ? "All done — great work." : `${done.length} of ${tasks.length} done`}
         </p>
       )}
     </div>

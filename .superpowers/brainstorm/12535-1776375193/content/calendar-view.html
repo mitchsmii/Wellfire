@@ -1,0 +1,70 @@
+<h2>How should "Today's Calendar" render?</h2>
+<p class="subtitle">Same data (time blocks for today) — three visual treatments. This is only the right half of the Home split-hero.</p>
+
+<div class="cards">
+  <div class="card" data-choice="timeline" onclick="toggleSelect(this)">
+    <div class="card-image">
+      <div class="mockup" style="margin:0">
+        <div class="mockup-header">Timeline (vertical hours)</div>
+        <div class="mockup-body" style="padding:12px;background:#faf7f2">
+          <div style="display:grid;grid-template-columns:36px 1fr;gap:6px;font-size:10px;color:#78716c;font-family:monospace">
+            <div style="text-align:right">8a</div><div style="height:14px;border-top:1px dashed #e7e5e4"></div>
+            <div style="text-align:right">9a</div><div style="height:14px;border-top:1px dashed #e7e5e4;position:relative"><div style="position:absolute;left:0;right:0;top:2px;height:24px;border-radius:4px;background:#fde68a;padding:2px 6px;color:#92400e">Deep work block</div></div>
+            <div style="text-align:right">10a</div><div style="height:14px;border-top:1px dashed #e7e5e4"></div>
+            <div style="text-align:right">11a</div><div style="height:14px;border-top:1px dashed #e7e5e4;position:relative"><div style="position:absolute;left:0;right:0;top:2px;height:14px;border-radius:4px;background:#fecaca;padding:1px 6px;color:#991b1b">Standup</div></div>
+            <div style="text-align:right">12p</div><div style="height:14px;border-top:1px dashed #e7e5e4;position:relative"><div style="position:absolute;left:0;right:0;top:-4px;border-top:2px solid #ef4444"></div></div>
+            <div style="text-align:right">1p</div><div style="height:14px;border-top:1px dashed #e7e5e4"></div>
+            <div style="text-align:right">2p</div><div style="height:14px;border-top:1px dashed #e7e5e4;position:relative"><div style="position:absolute;left:0;right:0;top:2px;height:38px;border-radius:4px;background:#bfdbfe;padding:2px 6px;color:#1e3a8a">Client review</div></div>
+            <div style="text-align:right">3p</div><div style="height:14px;border-top:1px dashed #e7e5e4"></div>
+            <div style="text-align:right">4p</div><div style="height:14px;border-top:1px dashed #e7e5e4"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>Timeline</h3>
+      <p>Scaled vertical column with hour labels. Blocks sit at their real start/end. A red "now" line moves down the day. Matches the current Schedule component.</p>
+    </div>
+  </div>
+
+  <div class="card" data-choice="agenda" onclick="toggleSelect(this)">
+    <div class="card-image">
+      <div class="mockup" style="margin:0">
+        <div class="mockup-header">Agenda (ordered list)</div>
+        <div class="mockup-body" style="padding:14px;background:#faf7f2;display:flex;flex-direction:column;gap:8px;font-size:11px">
+          <div style="display:flex;gap:10px;padding:8px 10px;border-radius:8px;background:#fef3c7"><span style="font-family:monospace;color:#78716c;min-width:70px">9:00–10:30</span><span style="font-weight:600;color:#1c1917">Deep work block</span></div>
+          <div style="display:flex;gap:10px;padding:8px 10px;border-radius:8px;background:#fee2e2"><span style="font-family:monospace;color:#78716c;min-width:70px">11:00–11:30</span><span style="font-weight:600;color:#1c1917">Standup</span></div>
+          <div style="display:flex;align-items:center;gap:10px;padding:4px 10px;color:#ef4444;font-weight:600;font-family:monospace;font-size:10px">— now 12:14p —</div>
+          <div style="display:flex;gap:10px;padding:8px 10px;border-radius:8px;background:#dbeafe"><span style="font-family:monospace;color:#78716c;min-width:70px">2:00–3:30</span><span style="font-weight:600;color:#1c1917">Client review</span></div>
+          <div style="display:flex;gap:10px;padding:8px 10px;border-radius:8px;background:#f5f5f4"><span style="font-family:monospace;color:#a8a29e;min-width:70px">5:30–6:30</span><span style="color:#57534e">Run</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>Agenda</h3>
+      <p>Chronological list of blocks. More information-dense, no empty space. "Now" appears inline between past and future items.</p>
+    </div>
+  </div>
+
+  <div class="card" data-choice="hybrid" onclick="toggleSelect(this)">
+    <div class="card-image">
+      <div class="mockup" style="margin:0">
+        <div class="mockup-header">Smart timeline (compressed empty hours)</div>
+        <div class="mockup-body" style="padding:12px;background:#faf7f2">
+          <div style="display:grid;grid-template-columns:36px 1fr;gap:6px;font-size:10px;color:#78716c;font-family:monospace">
+            <div style="text-align:right">9a</div><div style="height:28px;border-radius:4px;background:#fde68a;padding:3px 6px;color:#92400e">Deep work</div>
+            <div style="text-align:right;color:#d6d3d1">·</div><div style="height:10px;border-top:1px dashed #e7e5e4;opacity:0.5"></div>
+            <div style="text-align:right">11a</div><div style="height:16px;border-radius:4px;background:#fecaca;padding:2px 6px;color:#991b1b">Standup</div>
+            <div style="text-align:right;color:#ef4444">↓ now</div><div style="border-top:2px solid #ef4444"></div>
+            <div style="text-align:right">2p</div><div style="height:36px;border-radius:4px;background:#bfdbfe;padding:3px 6px;color:#1e3a8a">Client review</div>
+            <div style="text-align:right">5:30p</div><div style="height:22px;border-radius:4px;background:#f5f5f4;padding:3px 6px;color:#57534e">Run</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>Smart timeline</h3>
+      <p>Hybrid: blocks keep relative order + duration hints, but empty runs between blocks collapse. Less scroll, still feels like time.</p>
+    </div>
+  </div>
+</div>

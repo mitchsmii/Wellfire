@@ -1,0 +1,1014 @@
+<!doctype html>
+<html lang="en" class="dark">
+<head>
+<meta charset="utf-8" />
+<title>Wellfire — Home redesign</title>
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500&family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+<script>
+  tailwind.config = { darkMode: 'class' };
+</script>
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<style>
+  :root {
+    --bg: #faf7f2;
+    --bg-dark: #0f0e0c;
+  }
+  html, body { margin: 0; background: var(--bg-dark); color: #e8e0d5;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; -webkit-font-smoothing: antialiased; }
+  html.dark body { background: var(--bg-dark); }
+  html:not(.dark) body { background: var(--bg); color: #44403c; }
+  ::-webkit-scrollbar { width: 4px; height: 4px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: #3a3530; border-radius: 2px; }
+  html:not(.dark) ::-webkit-scrollbar-thumb { background: #d6d3d1; }
+  .font-serif-q { font-family: 'Cormorant Garamond', 'Iowan Old Style', Georgia, serif; }
+  .no-scrollbar::-webkit-scrollbar { display: none; }
+
+  /* Flame glow pulse for today-highlighting */
+  @keyframes pulse-soft { 0%, 100% { opacity: 0.55; } 50% { opacity: 0.85; } }
+  .pulse-soft { animation: pulse-soft 3s ease-in-out infinite; }
+
+  /* Sparkline stroke draw */
+  .draw { stroke-dasharray: 600; stroke-dashoffset: 600; animation: draw 1.2s ease-out forwards; }
+  @keyframes draw { to { stroke-dashoffset: 0; } }
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="text/babel" data-presets="react">
+/* ---------- TWEAK DEFAULTS ---------- */
+const TWEAKS = /*EDITMODE-BEGIN*/{
+  "layout": "focus",
+  "theme": "dark",
+  "showIntention": false,
+  "density": "comfortable"
+}/*EDITMODE-END*/;
+
+const { useState, useEffect, useMemo, useRef } = React;
+
+/* ---------- MOCK DATA ---------- */
+const today = new Date(2026, 3, 18); // Apr 18 2026 — Saturday
+// Adjust: pick a Thursday for a more typical weekday feel
+const TODAY = new Date(2026, 3, 16); // Thu Apr 16
+function iso(d) { return d.toISOString().slice(0,10); }
+function addDays(d, n) { const x = new Date(d); x.setDate(x.getDate()+n); return x; }
+
+const GOALS = [
+  { id:'g1', text:'Ship Wellfire v2 beta', progress: 0.6, category:'weekly' },
+  { id:'g2', text:'Run 3× this week', progress: 0.33, category:'weekly' },
+  { id:'g3', text:'Finish reading "Four Thousand Weeks"', progress: 0.75, category:'weekly' },
+  { id:'g4', text:'Call Mom', progress: 0, category:'weekly' },
+];
+
+const BLOCKS_TODAY = [
+  { id:'b1', title:'Deep work — Week preview polish', start:'09:00', end:'11:00', color:'amber' },
+  { id:'b2', title:'Standup',            start:'11:15', end:'11:30', color:'sky' },
+  { id:'b3', title:'Lunch w/ Priya',     start:'12:30', end:'13:30', color:'green' },
+  { id:'b4', title:'1:1 · Marcus',       start:'14:00', end:'14:30', color:'purple' },
+  { id:'b5', title:'Design review',      start:'15:00', end:'16:00', color:'rose' },
+  { id:'b6', title:'Run — river loop',   start:'17:30', end:'18:15', color:'green' },
+];
+
+const TASKS_TODAY = [
+  { id:'t1', text:'Review week-preview PR feedback', done:false, goalId:'g1' },
+  { id:'t2', text:'Send deck to Priya before lunch', done:true,  goalId:null },
+  { id:'t3', text:'Book flights for May offsite',    done:false, goalId:null },
+  { id:'t4', text:'Draft beta launch announcement',  done:false, goalId:'g1' },
+  { id:'t5', text:'Reply to Mom',                    done:false, goalId:'g4' },
+];
+
+const INBOX = [
+  { id:'i1', text:'Research noise-cancelling headphones' },
+  { id:'i2', text:'Cancel gym trial before Fri' },
+];
+
+// Week ahead (6 days starting tomorrow)
+const WEEK = [
+  { date: addDays(TODAY,1), label:'Fri', events:[
+      { time:'10:00', title:'Physical therapy' },
+      { time:'13:00', title:'Beta call · design team' },
+      { time:'19:30', title:'Dinner · Ravi + Sam' },
+    ], tasks:['Prep beta talking points','Pick up prescription'] },
+  { date: addDays(TODAY,2), label:'Sat', events:[
+      { time:'08:00', title:'Long run — 10k' },
+      { time:'15:00', title:'Farmers market' },
+    ], tasks:['Grocery run'] },
+  { date: addDays(TODAY,3), label:'Sun', events:[
+      { time:'11:00', title:'Brunch · family' },
+    ], tasks:['Meal prep','Journal · weekly review'] },
+  { date: addDays(TODAY,4), label:'Mon', events:[
+      { time:'09:00', title:'Offsite planning kickoff' },
+      { time:'14:00', title:'Investor update' },
+      { time:'16:30', title:'Therapy' },
+    ], tasks:['Draft Q2 roadmap','Confirm offsite venue'] },
+  { date: addDays(TODAY,5), label:'Tue', events:[
+      { time:'10:00', title:'Board prep' },
+      { time:'12:00', title:'Lunch · Nia' },
+    ], tasks:['Board deck v2'] },
+  { date: addDays(TODAY,6), label:'Wed', events:[
+      { time:'09:30', title:'Board meeting' },
+    ], tasks:['Sign lease','Call Mom (followup)'] },
+];
+
+/* ---------- SHARED STYLES ---------- */
+const COLORS = {
+  amber:  { bg:'bg-amber-500/15',  bd:'border-amber-500/30',  tx:'text-amber-700 dark:text-amber-300',  sw:'bg-amber-400'  },
+  sky:    { bg:'bg-sky-500/15',    bd:'border-sky-500/30',    tx:'text-sky-700 dark:text-sky-300',      sw:'bg-sky-400'    },
+  green:  { bg:'bg-emerald-500/15',bd:'border-emerald-500/30',tx:'text-emerald-700 dark:text-emerald-300', sw:'bg-emerald-400' },
+  purple: { bg:'bg-violet-500/15', bd:'border-violet-500/30', tx:'text-violet-700 dark:text-violet-300',sw:'bg-violet-400' },
+  rose:   { bg:'bg-rose-500/15',   bd:'border-rose-500/30',   tx:'text-rose-700 dark:text-rose-300',    sw:'bg-rose-400'   },
+};
+
+/* ---------- ATOMIC BITS ---------- */
+function Flame({ size=22, stroke }){
+  // Monoline flame (Variant C). Stroke adapts to theme unless overridden.
+  const color = stroke || 'currentColor';
+  const w = Math.max(1.8, size*0.09);
+  return (
+    <svg viewBox="0 0 64 64" width={size} height={size} fill="none" style={{color: '#f59e0b'}}>
+      <path d="M32 10 C32 10, 20 22, 20 36 C20 46, 25 54, 32 54 C39 54, 44 46, 44 36 C44 29, 40 25, 40 25"
+        stroke={color} strokeWidth={w} strokeLinecap="round" strokeLinejoin="round" fill="none"/>
+      <path d="M32 10 C34 22, 40 28, 37 34 C35 37, 32 38, 32 38"
+        stroke={color} strokeWidth={w} strokeLinecap="round" strokeLinejoin="round" fill="none"/>
+    </svg>
+  );
+}
+
+function Wordmark({ size=16, className='' }){
+  return (
+    <span className={className} style={{fontFamily:'Fraunces,Georgia,serif', fontWeight:600, fontSize:size, letterSpacing:'-0.01em'}}>
+      Well<span style={{fontFamily:'Instrument Serif,Georgia,serif', fontStyle:'italic', fontWeight:500}}>fire</span>
+    </span>
+  );
+}
+
+function getGreeting(){
+  const h = new Date().getHours();
+  if (h < 12) return 'Good morning';
+  if (h < 17) return 'Good afternoon';
+  return 'Good evening';
+}
+
+function formatHourLabel(t){
+  const [h,m]=t.split(':').map(Number);
+  const p = h>=12?'pm':'am';
+  const h12 = h%12||12;
+  return m===0 ? `${h12}${p}` : `${h12}:${String(m).padStart(2,'0')}${p}`;
+}
+
+function toMin(t){ const [h,m]=t.split(':').map(Number); return h*60+m; }
+
+/* ---------- SIDEBAR + HEADER (matching real app) ---------- */
+function Sidebar({ active='home' }){
+  const items = [
+    { id:'home', label:'Home', icon:(
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><path d="M3 10 12 3l9 7"/><path d="M5 9v11h14V9"/></svg>
+    )},
+    { id:'daily', label:'Daily', icon:(
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M8 3v4M16 3v4M3 10h18"/></svg>
+    )},
+    { id:'weekly', label:'Weekly', icon:(
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M8 3v4M16 3v4M3 10h18M9 14h2M13 14h2M9 17h2M13 17h2"/></svg>
+    )},
+    { id:'goals', label:'Goals', icon:(
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.5" fill="currentColor"/></svg>
+    )},
+  ];
+  return (
+    <aside className="fixed left-0 top-0 h-full w-20 flex flex-col items-stretch py-5 border-r border-stone-200/60 dark:border-stone-800/30 bg-[#faf7f2] dark:bg-[#0f0e0c] z-30">
+      <div className="flex items-center justify-center pb-5 mb-2 border-b border-stone-200/40 dark:border-stone-800/20">
+        <Flame size={22}/>
+      </div>
+      <nav className="flex flex-col gap-1 px-2">
+        {items.map(it=>(
+          <button key={it.id}
+            className={`flex flex-col items-center gap-1 py-2.5 rounded-lg text-[10px] font-medium tracking-wide transition-all
+              ${active===it.id
+                ? 'bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400'
+                : 'text-stone-400 dark:text-stone-600 hover:text-stone-600 dark:hover:text-stone-400 hover:bg-stone-100/60 dark:hover:bg-stone-800/40'}`}>
+            {it.icon}<span>{it.label}</span>
+          </button>
+        ))}
+      </nav>
+    </aside>
+  );
+}
+
+function Header(){
+  const dateStr = TODAY.toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'});
+  return (
+    <header className="border-b border-stone-200/60 dark:border-stone-800/30 px-6 py-4">
+      <div className="max-w-7xl mx-auto flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <Flame size={24}/>
+          <Wordmark size={18} className="text-stone-900 dark:text-stone-100"/>
+        </div>
+        <div className="flex items-center gap-3">
+          <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-500/10 border border-amber-200/40 dark:border-amber-500/10">
+            <svg viewBox="0 0 12 12" fill="none" className="w-3 h-3"><path d="M6 1L7.5 4.5L11 5L8.5 7.5L9 11L6 9.5L3 11L3.5 7.5L1 5L4.5 4.5L6 1Z" fill="currentColor" opacity="0.8"/></svg>
+            Morning check-in
+          </button>
+          <div className="text-right">
+            <p className="text-sm text-stone-500 dark:text-stone-400">{getGreeting()}, Sam</p>
+            <p className="text-xs text-stone-400 dark:text-stone-600">{dateStr}</p>
+          </div>
+        </div>
+      </div>
+    </header>
+  );
+}
+
+/* ---------- VARIANT A: FOCUS ---------- */
+/* Big hero ("Today") with intention, schedule mini-timeline, top 3 tasks.
+   Week ribbon above the fold, horizontally scrollable day cards. */
+function VariantFocus({ intention, setIntention, showIntention }){
+  const [tasks, setTasks] = useState(TASKS_TODAY);
+  const [intentionDraft, setIntentionDraft] = useState('');
+  const [editingIntent, setEditingIntent] = useState(!intention);
+  const pending = tasks.filter(t=>!t.done);
+  const done = tasks.filter(t=>t.done);
+  const nowMin = 10*60 + 42; // pretend 10:42am
+  const next = BLOCKS_TODAY.find(b => toMin(b.end) > nowMin) || BLOCKS_TODAY[BLOCKS_TODAY.length-1];
+  const goalProg = Math.round(GOALS.reduce((a,g)=>a+g.progress,0)/GOALS.length * 100);
+
+  function toggle(id){ setTasks(tasks.map(t=>t.id===id?{...t,done:!t.done}:t)); }
+
+  return (
+    <main className="max-w-7xl mx-auto px-6 py-6 flex flex-col gap-6">
+      {/* ── HERO: Today ── */}
+      <section className="relative overflow-hidden rounded-3xl border border-stone-200/50 dark:border-stone-800/40 bg-gradient-to-br from-amber-50/80 via-white to-white dark:from-amber-500/[0.06] dark:via-stone-900/40 dark:to-stone-900/10 p-8">
+        {/* Flame backdrop */}
+        <div className="absolute -right-10 -top-10 opacity-20 dark:opacity-15 pointer-events-none text-amber-500">
+          <Flame size={320} stroke="currentColor"/>
+        </div>
+        <div className="relative grid grid-cols-12 gap-8">
+          {/* Left column: date + intention + next + top tasks */}
+          <div className="col-span-7 flex flex-col gap-6">
+            <div className="flex items-baseline gap-3">
+              <span className="text-[11px] font-semibold uppercase tracking-[0.2em] text-amber-600 dark:text-amber-400">Thursday · April 16</span>
+              <span className="text-[11px] text-stone-400 dark:text-stone-600">Week 16</span>
+            </div>
+
+            {showIntention && (
+              <div className="flex items-start gap-4">
+                <span className="font-serif-q text-6xl leading-[0.6] text-amber-400/70 dark:text-amber-500/50 mt-2">“</span>
+                <div className="flex-1">
+                  <div className="text-[10px] font-semibold uppercase tracking-widest text-amber-600/70 dark:text-amber-500/60 mb-1">Today's intention</div>
+                  {editingIntent ? (
+                    <input autoFocus placeholder="What do you intend to bring to today?"
+                      value={intentionDraft} onChange={e=>setIntentionDraft(e.target.value)}
+                      onKeyDown={e=>{ if(e.key==='Enter'&&intentionDraft.trim()){setIntention(intentionDraft.trim()); setEditingIntent(false);} }}
+                      className="w-full bg-transparent text-2xl font-serif-q italic text-stone-800 dark:text-stone-100 placeholder-stone-400/70 dark:placeholder-stone-600 outline-none leading-snug"/>
+                  ) : (
+                    <p onClick={()=>{ setIntentionDraft(intention); setEditingIntent(true); }}
+                       className="text-2xl font-serif-q italic text-stone-800 dark:text-stone-100 leading-snug cursor-text">
+                      {intention}
+                    </p>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Next up card */}
+            <div className="flex items-center gap-4 rounded-2xl border border-amber-500/30 bg-white/70 dark:bg-stone-900/40 px-4 py-3 w-fit">
+              <div className="w-10 h-10 rounded-xl bg-amber-500/20 flex items-center justify-center">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" className="text-amber-600 dark:text-amber-400"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+              </div>
+              <div>
+                <div className="text-[10px] uppercase tracking-widest text-stone-400 dark:text-stone-600 font-semibold">Up next · in 33 min</div>
+                <div className="text-sm font-semibold text-stone-800 dark:text-stone-100">{next.title}</div>
+                <div className="text-xs text-stone-500 dark:text-stone-400">{formatHourLabel(next.start)} – {formatHourLabel(next.end)}</div>
+              </div>
+            </div>
+
+            {/* Today's top 3 tasks */}
+            <div>
+              <div className="flex items-baseline justify-between mb-2">
+                <div>
+                  <div className="text-[10px] uppercase tracking-widest font-semibold text-stone-500 dark:text-stone-400">Today's focus</div>
+                  <div className="text-xs text-stone-400 dark:text-stone-600">{pending.length} to go · {done.length} done</div>
+                </div>
+                <button className="text-xs text-amber-600 dark:text-amber-400 font-medium">See all ({tasks.length + INBOX.length})</button>
+              </div>
+              <ul className="flex flex-col gap-1.5">
+                {tasks.slice(0,4).map(t=>{
+                  const goal = GOALS.find(g=>g.id===t.goalId);
+                  return (
+                    <li key={t.id} className="group flex items-center gap-3 rounded-xl px-3 py-2 hover:bg-white/60 dark:hover:bg-stone-900/40 transition-colors">
+                      <button onClick={()=>toggle(t.id)}
+                        className={`w-5 h-5 rounded-md border shrink-0 flex items-center justify-center transition-all
+                          ${t.done
+                            ? 'bg-amber-500 border-amber-500'
+                            : 'border-stone-300/70 dark:border-stone-600/60 hover:border-amber-400'}`}>
+                        {t.done && <svg width="11" height="8" viewBox="0 0 11 8" fill="none"><path d="M1 4l3 3 6-6" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>}
+                      </button>
+                      <span className={`flex-1 text-sm leading-snug ${t.done ? 'line-through text-stone-400 dark:text-stone-600' : 'text-stone-700 dark:text-stone-200'}`}>{t.text}</span>
+                      {goal && <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-700 dark:text-amber-300 border border-amber-500/20 shrink-0">{goal.text.split(' ').slice(0,2).join(' ')}…</span>}
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
+          </div>
+
+          {/* Right column: mini timeline */}
+          <div className="col-span-5">
+            <div className="flex items-baseline justify-between mb-2">
+              <div className="text-[10px] uppercase tracking-widest font-semibold text-stone-500 dark:text-stone-400">Today's rhythm</div>
+              <div className="text-xs text-stone-400 dark:text-stone-600 tabular-nums">10:42 AM</div>
+            </div>
+            <MiniTimeline blocks={BLOCKS_TODAY} now={nowMin}/>
+          </div>
+        </div>
+      </section>
+
+      {/* ── WEEK AHEAD RIBBON ── */}
+      <section>
+        <div className="flex items-baseline justify-between mb-3 px-1">
+          <div>
+            <div className="text-xs uppercase tracking-widest font-semibold text-stone-500 dark:text-stone-400">The week ahead</div>
+            <div className="text-sm text-stone-400 dark:text-stone-600">Next 6 days · plan a little in advance</div>
+          </div>
+          <button className="text-xs text-stone-500 dark:text-stone-400 hover:text-amber-500 dark:hover:text-amber-400 font-medium">Open weekly view →</button>
+        </div>
+        <div className="grid grid-cols-6 gap-3">
+          {WEEK.map((d,i)=><DayCard key={i} day={d} accent={i===0}/>)}
+        </div>
+      </section>
+
+      {/* ── GOALS + INBOX row ── */}
+      <section className="grid grid-cols-12 gap-4">
+        <div className="col-span-8 rounded-2xl border border-stone-200/50 dark:border-stone-800/30 bg-white/70 dark:bg-stone-900/25 p-5">
+          <div className="flex items-baseline justify-between mb-4">
+            <div>
+              <div className="text-[10px] uppercase tracking-widest font-semibold text-stone-500 dark:text-stone-400">This week's goals</div>
+              <div className="text-sm text-stone-400 dark:text-stone-600">What you're working toward</div>
+            </div>
+            <div className="flex items-center gap-3">
+              <Ring pct={goalProg}/>
+              <div className="text-right">
+                <div className="text-lg font-semibold text-stone-800 dark:text-stone-100 tabular-nums">{goalProg}%</div>
+                <div className="text-[10px] uppercase tracking-wider text-stone-400 dark:text-stone-600">overall</div>
+              </div>
+            </div>
+          </div>
+          <ul className="grid grid-cols-2 gap-x-6 gap-y-3">
+            {GOALS.map(g=>(
+              <li key={g.id} className="flex items-center gap-3">
+                <div className="relative w-8 h-8">
+                  <Ring pct={Math.round(g.progress*100)} size={32} thickness={3}/>
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="text-sm text-stone-700 dark:text-stone-200 truncate">{g.text}</div>
+                  <div className="text-[10px] text-stone-400 dark:text-stone-600 uppercase tracking-wider">{Math.round(g.progress*100)}%</div>
+                </div>
+              </li>
+            ))}
+          </ul>
+        </div>
+
+        <div className="col-span-4 rounded-2xl border border-stone-200/50 dark:border-stone-800/30 bg-white/70 dark:bg-stone-900/25 p-5 flex flex-col gap-3">
+          <div>
+            <div className="text-[10px] uppercase tracking-widest font-semibold text-stone-500 dark:text-stone-400">Inbox</div>
+            <div className="text-xs text-stone-400 dark:text-stone-600">Unsorted · drag to a day</div>
+          </div>
+          <ul className="flex flex-col gap-1.5">
+            {INBOX.map(t=>(
+              <li key={t.id} className="flex items-center gap-2.5 rounded-lg px-2 py-1.5 border border-dashed border-stone-200/60 dark:border-stone-800/60 text-sm text-stone-600 dark:text-stone-300 cursor-grab hover:border-amber-400/60 transition-colors">
+                <span className="text-stone-300 dark:text-stone-700">⋮⋮</span>
+                <span className="flex-1 truncate">{t.text}</span>
+              </li>
+            ))}
+          </ul>
+          <button className="text-xs text-stone-400 dark:text-stone-600 hover:text-amber-500 text-left mt-1">+ Capture a thought</button>
+        </div>
+      </section>
+    </main>
+  );
+}
+
+/* ---------- MiniTimeline: compact vertical schedule for hero ---------- */
+function MiniTimeline({ blocks, now }){
+  const START = 8*60, END = 19*60;
+  const H = 360;
+  const pct = m => ((m-START)/(END-START))*H;
+  return (
+    <div className="relative rounded-2xl border border-stone-200/50 dark:border-stone-800/40 bg-white/50 dark:bg-stone-900/40 p-4" style={{height: H+32}}>
+      {/* hour ticks */}
+      {[9,11,13,15,17,19].map(h=>(
+        <div key={h} className="absolute left-0 right-0 flex items-center gap-2 pointer-events-none" style={{top: 16+pct(h*60)}}>
+          <span className="text-[9px] font-mono tabular-nums text-stone-400 dark:text-stone-600 w-10 text-right pr-1">{formatHourLabel(`${h}:00`)}</span>
+          <div className="flex-1 border-t border-dashed border-stone-200/60 dark:border-stone-800/40"/>
+        </div>
+      ))}
+      {/* blocks */}
+      <div className="absolute top-4 left-12 right-3 bottom-4">
+        {blocks.map(b=>{
+          const top = pct(toMin(b.start));
+          const h = Math.max(22, pct(toMin(b.end)) - pct(toMin(b.start)));
+          const c = COLORS[b.color]||COLORS.amber;
+          return (
+            <div key={b.id} className={`absolute left-0 right-0 rounded-lg border ${c.bd} ${c.bg} px-2.5 py-1 overflow-hidden`}
+                 style={{top, height:h}}>
+              <div className={`text-xs font-semibold truncate ${c.tx}`}>{b.title}</div>
+              <div className="text-[10px] text-stone-500 dark:text-stone-400 tabular-nums">{formatHourLabel(b.start)} – {formatHourLabel(b.end)}</div>
+            </div>
+          );
+        })}
+        {/* now line */}
+        <div className="absolute left-0 right-0 flex items-center z-10 pointer-events-none" style={{top: pct(now)}}>
+          <div className="w-2 h-2 rounded-full bg-amber-500 -ml-1 shrink-0 pulse-soft"/>
+          <div className="flex-1 h-px bg-amber-500/70"/>
+          <span className="text-[9px] tabular-nums text-amber-600 dark:text-amber-400 font-semibold ml-1">NOW</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ---------- Ring progress ---------- */
+function Ring({ pct=0, size=56, thickness=5 }){
+  const r = (size - thickness)/2;
+  const c = 2*Math.PI*r;
+  const off = c*(1-pct/100);
+  return (
+    <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} className="shrink-0">
+      <circle cx={size/2} cy={size/2} r={r} stroke="currentColor" strokeOpacity="0.12" strokeWidth={thickness} fill="none" className="text-stone-500"/>
+      <circle cx={size/2} cy={size/2} r={r} stroke="url(#ringgrad)" strokeWidth={thickness} fill="none"
+        strokeDasharray={c} strokeDashoffset={off} strokeLinecap="round"
+        transform={`rotate(-90 ${size/2} ${size/2})`} style={{transition:'stroke-dashoffset 0.8s'}}/>
+      <defs>
+        <linearGradient id="ringgrad" x1="0" y1="0" x2={size} y2={size}>
+          <stop stopColor="#f59e0b"/><stop offset="1" stopColor="#ef4444"/>
+        </linearGradient>
+      </defs>
+    </svg>
+  );
+}
+
+/* ---------- DayCard for week ribbon ---------- */
+function DayCard({ day, accent=false }){
+  const events = day.events.slice(0,3);
+  const extraE = day.events.length - events.length;
+  const dateN = day.date.getDate();
+  const isWeekend = [0,6].includes(day.date.getDay());
+  return (
+    <div className={`rounded-xl border px-3 py-2.5 flex flex-col gap-2 transition-colors cursor-pointer
+      ${accent
+        ? 'border-amber-400/50 bg-amber-50/60 dark:bg-amber-500/[0.06] hover:bg-amber-50 dark:hover:bg-amber-500/[0.1]'
+        : 'border-stone-200/50 dark:border-stone-800/30 bg-white/60 dark:bg-stone-900/20 hover:border-amber-400/40'}`}>
+      <div className="flex items-baseline justify-between">
+        <span className={`text-[10px] font-semibold uppercase tracking-widest ${isWeekend?'text-amber-600/70 dark:text-amber-400/70':'text-stone-500 dark:text-stone-400'}`}>{day.label}</span>
+        <span className="text-sm font-semibold text-stone-700 dark:text-stone-200 tabular-nums">{dateN}</span>
+      </div>
+      {events.length===0 ? (
+        <span className="text-[11px] italic text-stone-400 dark:text-stone-600">Open day</span>
+      ) : (
+        <ul className="flex flex-col gap-1">
+          {events.map((e,i)=>(
+            <li key={i} className="flex items-baseline gap-1.5 text-[11px] leading-tight">
+              <span className="tabular-nums text-stone-400 dark:text-stone-600 shrink-0 w-7">{e.time.replace(/:00$/,'')}</span>
+              <span className="text-stone-700 dark:text-stone-200 truncate">{e.title}</span>
+            </li>
+          ))}
+          {extraE>0 && <li className="text-[10px] text-stone-400 dark:text-stone-600">+{extraE} event{extraE>1?'s':''}</li>}
+        </ul>
+      )}
+      {day.tasks.length>0 && (
+        <div className="flex flex-wrap gap-1 pt-1 border-t border-stone-200/40 dark:border-stone-800/30">
+          {day.tasks.slice(0,2).map((t,i)=>(
+            <span key={i} className="text-[10px] flex items-center gap-1 text-stone-500 dark:text-stone-400">
+              <span className="w-1 h-1 rounded-full bg-amber-400 dark:bg-amber-500"/>{t.length>18?t.slice(0,18)+'…':t}
+            </span>
+          ))}
+          {day.tasks.length>2 && <span className="text-[10px] text-stone-400 dark:text-stone-600">+{day.tasks.length-2}</span>}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ---------- VARIANT B: TIMELINE ---------- */
+/* Horizontal 7-day timeline with today as big hero band + future days as compressed lanes.
+   Top bar stays: intention + top task + next up */
+function VariantTimeline({ intention, setIntention, showIntention }){
+  const [tasks, setTasks] = useState(TASKS_TODAY);
+  const pending = tasks.filter(t=>!t.done);
+  const nowMin = 10*60 + 42;
+  const next = BLOCKS_TODAY.find(b => toMin(b.end) > nowMin);
+
+  function toggle(id){ setTasks(tasks.map(t=>t.id===id?{...t,done:!t.done}:t)); }
+
+  return (
+    <main className="max-w-7xl mx-auto px-6 py-6 flex flex-col gap-5">
+      {/* Hero strip: intention + next + focus % */}
+      <section className="grid grid-cols-12 gap-4">
+        {showIntention && (
+          <div className="col-span-6 rounded-2xl border border-amber-200/40 dark:border-amber-500/10 bg-amber-50/70 dark:bg-amber-950/20 p-5 flex items-start gap-4">
+            <span className="font-serif-q text-5xl leading-[0.5] text-amber-400/70 dark:text-amber-500/50 mt-1">“</span>
+            <div>
+              <div className="text-[10px] font-semibold uppercase tracking-widest text-amber-600/70 dark:text-amber-500/60 mb-1">Today · Thu Apr 16</div>
+              <p className="text-xl font-serif-q italic text-stone-800 dark:text-stone-100 leading-snug">{intention}</p>
+            </div>
+          </div>
+        )}
+        <div className={`${showIntention?'col-span-3':'col-span-6'} rounded-2xl border border-stone-200/50 dark:border-stone-800/30 bg-white/60 dark:bg-stone-900/25 p-5`}>
+          <div className="text-[10px] uppercase tracking-widest text-stone-500 dark:text-stone-400 font-semibold mb-1">Up next</div>
+          {next ? (
+            <>
+              <div className="text-lg font-semibold text-stone-800 dark:text-stone-100 leading-tight">{next.title}</div>
+              <div className="text-xs text-stone-500 dark:text-stone-400 tabular-nums mt-1">{formatHourLabel(next.start)} · in 33 min</div>
+            </>
+          ) : <div className="text-sm text-stone-400 italic">Nothing else today — breathe.</div>}
+        </div>
+        <div className={`${showIntention?'col-span-3':'col-span-6'} rounded-2xl border border-stone-200/50 dark:border-stone-800/30 bg-white/60 dark:bg-stone-900/25 p-5 flex items-center gap-4`}>
+          <Ring pct={Math.round(tasks.filter(t=>t.done).length/tasks.length*100)} size={56} thickness={5}/>
+          <div>
+            <div className="text-[10px] uppercase tracking-widest text-stone-500 dark:text-stone-400 font-semibold">Today</div>
+            <div className="text-2xl font-semibold text-stone-800 dark:text-stone-100 tabular-nums leading-none">{pending.length} <span className="text-sm text-stone-400 font-normal">left</span></div>
+          </div>
+        </div>
+      </section>
+
+      {/* Main: horizontal week timeline with today expanded */}
+      <section className="rounded-3xl border border-stone-200/50 dark:border-stone-800/30 bg-white/60 dark:bg-stone-900/25 p-5">
+        <div className="flex items-baseline justify-between mb-4">
+          <div>
+            <div className="text-[10px] uppercase tracking-widest text-stone-500 dark:text-stone-400 font-semibold">Your week at a glance</div>
+            <div className="text-sm text-stone-400 dark:text-stone-600">Today expanded · hover any day to focus</div>
+          </div>
+          <div className="text-xs text-stone-500 dark:text-stone-400 tabular-nums">Apr 16 – Apr 22</div>
+        </div>
+        <WeekTimeline />
+      </section>
+
+      {/* Today tasks + goals */}
+      <section className="grid grid-cols-12 gap-4">
+        <div className="col-span-7 rounded-2xl border border-stone-200/50 dark:border-stone-800/30 bg-white/60 dark:bg-stone-900/25 p-5">
+          <div className="flex items-baseline justify-between mb-3">
+            <div>
+              <div className="text-[10px] uppercase tracking-widest text-stone-500 dark:text-stone-400 font-semibold">Today's to-do</div>
+              <div className="text-xs text-stone-400 dark:text-stone-600">{pending.length} remaining</div>
+            </div>
+          </div>
+          <ul className="flex flex-col gap-1">
+            {tasks.map(t=>{
+              const goal = GOALS.find(g=>g.id===t.goalId);
+              return (
+                <li key={t.id} className="group flex items-center gap-3 rounded-lg px-2 py-1.5 hover:bg-stone-100/50 dark:hover:bg-stone-800/30">
+                  <button onClick={()=>toggle(t.id)}
+                    className={`w-4 h-4 rounded border shrink-0 flex items-center justify-center
+                      ${t.done?'bg-amber-500 border-amber-500':'border-stone-300/70 dark:border-stone-600/60 hover:border-amber-400'}`}>
+                    {t.done && <svg width="9" height="7" viewBox="0 0 11 8" fill="none"><path d="M1 4l3 3 6-6" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>}
+                  </button>
+                  <span className={`flex-1 text-sm leading-snug ${t.done ? 'line-through text-stone-400 dark:text-stone-600' : 'text-stone-700 dark:text-stone-200'}`}>{t.text}</span>
+                  {goal && <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-700 dark:text-amber-300 border border-amber-500/20 shrink-0">{goal.text.split(' ').slice(0,2).join(' ')}…</span>}
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+        <div className="col-span-5 rounded-2xl border border-stone-200/50 dark:border-stone-800/30 bg-white/60 dark:bg-stone-900/25 p-5">
+          <div className="text-[10px] uppercase tracking-widest text-stone-500 dark:text-stone-400 font-semibold mb-3">Weekly goals</div>
+          <ul className="flex flex-col gap-3">
+            {GOALS.map(g=>(
+              <li key={g.id}>
+                <div className="flex items-baseline justify-between text-sm mb-1">
+                  <span className="text-stone-700 dark:text-stone-200 truncate pr-2">{g.text}</span>
+                  <span className="text-xs text-stone-400 dark:text-stone-600 tabular-nums">{Math.round(g.progress*100)}%</span>
+                </div>
+                <div className="h-1.5 rounded-full bg-stone-200/60 dark:bg-stone-800/60 overflow-hidden">
+                  <div className="h-full rounded-full" style={{width:`${g.progress*100}%`, background:'linear-gradient(90deg,#f59e0b,#ef4444)'}}/>
+                </div>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </section>
+    </main>
+  );
+}
+
+/* Horizontal timeline — today is big (takes ~40%), the other 6 days are compressed */
+function WeekTimeline(){
+  // Horizontal lanes: today gets full hour ruler; future days show compact dots
+  const TODAY_W = 44; // percent width for today
+  const OTHER_W = (100-TODAY_W)/6;
+  return (
+    <div className="flex gap-0 rounded-2xl overflow-hidden">
+      {/* TODAY panel */}
+      <div className="relative" style={{width:`${TODAY_W}%`, minHeight: 280}}>
+        <div className="absolute top-0 left-0 right-0 bg-amber-500/10 dark:bg-amber-500/5 border-b border-amber-500/20 px-3 py-1.5 flex items-baseline justify-between">
+          <span className="text-[10px] font-bold uppercase tracking-widest text-amber-700 dark:text-amber-300">Today · Thu 16</span>
+          <span className="text-[10px] text-amber-700/70 dark:text-amber-400/70 tabular-nums">10:42</span>
+        </div>
+        <div className="relative pt-8 pb-3 h-[280px]">
+          {/* hour ticks */}
+          {[8,10,12,14,16,18].map((h,i)=>(
+            <div key={h} className="absolute left-0 right-0 flex items-center pointer-events-none" style={{top: 32+(i*(248/5))}}>
+              <span className="text-[9px] font-mono tabular-nums text-stone-400 dark:text-stone-600 w-9 text-right pr-2">{formatHourLabel(`${h}:00`)}</span>
+              <div className="flex-1 border-t border-dashed border-stone-200/60 dark:border-stone-800/40"/>
+            </div>
+          ))}
+          <div className="absolute top-8 left-11 right-3 h-[248px]">
+            {BLOCKS_TODAY.map(b=>{
+              const S=8*60, E=18*60;
+              const top = ((toMin(b.start)-S)/(E-S))*248;
+              const h = Math.max(22, ((toMin(b.end)-toMin(b.start))/(E-S))*248);
+              const c = COLORS[b.color]||COLORS.amber;
+              return (
+                <div key={b.id} className={`absolute left-0 right-0 rounded-lg border ${c.bd} ${c.bg} px-2 py-1 overflow-hidden`} style={{top, height:h}}>
+                  <div className={`text-[11px] font-semibold truncate ${c.tx}`}>{b.title}</div>
+                  <div className="text-[9px] text-stone-500 dark:text-stone-400 tabular-nums">{formatHourLabel(b.start)}</div>
+                </div>
+              );
+            })}
+            {/* now line */}
+            <div className="absolute left-0 right-0 flex items-center z-10 pointer-events-none" style={{top: ((10*60+42-8*60)/(10*60))*248}}>
+              <div className="w-2 h-2 rounded-full bg-amber-500 -ml-1 shrink-0 pulse-soft"/>
+              <div className="flex-1 h-px bg-amber-500/70"/>
+            </div>
+          </div>
+        </div>
+      </div>
+      {/* FUTURE days: compressed lanes */}
+      {WEEK.map((d,i)=>(
+        <div key={i} className="relative border-l border-stone-200/50 dark:border-stone-800/30 hover:bg-stone-50/60 dark:hover:bg-stone-800/20 transition-colors cursor-pointer"
+             style={{width:`${OTHER_W}%`}}>
+          <div className={`px-2 py-1.5 border-b border-stone-200/40 dark:border-stone-800/30 flex items-baseline justify-between
+            ${[0,6].includes(d.date.getDay())?'bg-stone-100/50 dark:bg-stone-900/40':''}`}>
+            <span className="text-[10px] font-semibold uppercase tracking-widest text-stone-500 dark:text-stone-400">{d.label}</span>
+            <span className="text-[10px] tabular-nums text-stone-400 dark:text-stone-600">{d.date.getDate()}</span>
+          </div>
+          <div className="relative h-[260px] px-1.5 pt-2">
+            {/* Event dots arranged by time */}
+            {d.events.map((e,ix)=>{
+              const [h,m]=e.time.split(':').map(Number);
+              const mins = h*60+m;
+              const S=8*60, E=20*60;
+              const top = Math.max(0, Math.min(240, ((mins-S)/(E-S))*240));
+              return (
+                <div key={ix} className="absolute left-1.5 right-1.5 rounded-md bg-amber-500/10 border-l-2 border-amber-400 pl-1 pr-1 py-0.5"
+                     style={{top}}>
+                  <div className="text-[10px] text-stone-400 dark:text-stone-600 tabular-nums leading-none">{formatHourLabel(e.time).replace(/am|pm/,'')}</div>
+                  <div className="text-[10px] text-stone-700 dark:text-stone-200 truncate leading-tight">{e.title}</div>
+                </div>
+              );
+            })}
+            {/* Task dots (bottom) */}
+            {d.tasks.length>0 && (
+              <div className="absolute bottom-2 left-1.5 right-1.5 flex flex-wrap gap-0.5">
+                {d.tasks.map((_,ti)=>(
+                  <span key={ti} className="w-1.5 h-1.5 rounded-full bg-amber-400/70 dark:bg-amber-500/60"/>
+                ))}
+                <span className="text-[9px] text-stone-400 dark:text-stone-600 ml-1">{d.tasks.length} to-do</span>
+              </div>
+            )}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+/* ---------- VARIANT C: AGENDA ---------- */
+/* Single left-rail agenda (vertical timeline with today anchor + expanding future days)
+   Right rail with goals + intention.  Most information-dense, feels like a daily/weekly journal */
+function VariantAgenda({ intention, showIntention }){
+  const [expanded, setExpanded] = useState(new Set([iso(addDays(TODAY,1))])); // tomorrow expanded
+  const [tasks, setTasks] = useState(TASKS_TODAY);
+  function toggle(id){ setTasks(tasks.map(t=>t.id===id?{...t,done:!t.done}:t)); }
+  function toggleDay(k){
+    const s = new Set(expanded);
+    s.has(k)?s.delete(k):s.add(k);
+    setExpanded(s);
+  }
+  const nowMin = 10*60+42;
+
+  return (
+    <main className="max-w-7xl mx-auto px-6 py-6 grid grid-cols-12 gap-6">
+      {/* ── LEFT: Agenda stream ── */}
+      <section className="col-span-8 flex flex-col gap-0">
+        {/* TODAY card — big */}
+        <div className="relative rounded-3xl border border-amber-400/40 bg-gradient-to-br from-amber-50/60 via-white to-white dark:from-amber-500/[0.07] dark:via-stone-900/40 dark:to-stone-900/20 p-6 mb-5">
+          <div className="absolute -left-3 top-8 w-6 h-6 rounded-full bg-amber-500 shadow-lg shadow-amber-500/30 flex items-center justify-center">
+            <div className="w-2 h-2 bg-white rounded-full pulse-soft"/>
+          </div>
+          <div className="flex items-baseline justify-between mb-4">
+            <div>
+              <div className="text-[10px] font-semibold uppercase tracking-[0.2em] text-amber-600 dark:text-amber-400">Today · Thursday</div>
+              <div className="text-3xl font-semibold text-stone-800 dark:text-stone-100 mt-0.5 tracking-tight">April 16</div>
+            </div>
+            <div className="text-right">
+              <div className="text-[10px] uppercase tracking-widest text-stone-400 dark:text-stone-600 font-semibold">Now</div>
+              <div className="text-xl font-semibold text-stone-700 dark:text-stone-300 tabular-nums">10:42<span className="text-sm text-stone-400 font-normal ml-0.5">am</span></div>
+            </div>
+          </div>
+
+          {/* Schedule + Tasks two columns */}
+          <div className="grid grid-cols-2 gap-6">
+            <div>
+              <div className="text-[10px] uppercase tracking-widest font-semibold text-stone-500 dark:text-stone-400 mb-2">Schedule</div>
+              <ul className="flex flex-col gap-1.5">
+                {BLOCKS_TODAY.map(b=>{
+                  const c = COLORS[b.color]||COLORS.amber;
+                  const isPast = toMin(b.end) < nowMin;
+                  const isNow = toMin(b.start) <= nowMin && toMin(b.end) > nowMin;
+                  return (
+                    <li key={b.id} className={`group flex items-center gap-2.5 ${isPast?'opacity-50':''}`}>
+                      <span className={`tabular-nums text-[11px] text-stone-400 dark:text-stone-600 w-12 shrink-0 ${isNow?'text-amber-600 dark:text-amber-400 font-semibold':''}`}>
+                        {formatHourLabel(b.start).replace(/am|pm/,'')}
+                      </span>
+                      <span className={`w-1 h-4 rounded-full ${c.sw} shrink-0`}/>
+                      <span className={`text-sm truncate ${isNow?'text-stone-800 dark:text-stone-100 font-semibold':'text-stone-700 dark:text-stone-200'}`}>{b.title}</span>
+                      {isNow && <span className="text-[9px] text-amber-600 dark:text-amber-400 font-semibold uppercase tracking-widest animate-pulse">Now</span>}
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
+            <div>
+              <div className="flex items-baseline justify-between mb-2">
+                <div className="text-[10px] uppercase tracking-widest font-semibold text-stone-500 dark:text-stone-400">To-do</div>
+                <div className="text-[10px] text-stone-400 dark:text-stone-600">{tasks.filter(t=>!t.done).length} left</div>
+              </div>
+              <ul className="flex flex-col gap-1">
+                {tasks.map(t=>{
+                  const goal = GOALS.find(g=>g.id===t.goalId);
+                  return (
+                    <li key={t.id} className="group flex items-center gap-2">
+                      <button onClick={()=>toggle(t.id)}
+                        className={`w-4 h-4 rounded border shrink-0 flex items-center justify-center
+                          ${t.done?'bg-amber-500 border-amber-500':'border-stone-300/70 dark:border-stone-600/60 hover:border-amber-400'}`}>
+                        {t.done && <svg width="9" height="7" viewBox="0 0 11 8" fill="none"><path d="M1 4l3 3 6-6" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>}
+                      </button>
+                      <span className={`flex-1 text-sm truncate ${t.done?'line-through text-stone-400':'text-stone-700 dark:text-stone-200'}`}>{t.text}</span>
+                      {goal && <span className={`w-1.5 h-1.5 rounded-full bg-amber-500/70 shrink-0`} title={goal.text}/>}
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        {/* Looking ahead — stream */}
+        <div className="text-[10px] uppercase tracking-[0.2em] font-semibold text-stone-500 dark:text-stone-400 mb-3 px-1">Looking ahead</div>
+        <div className="relative">
+          {/* Vertical connector line */}
+          <div className="absolute left-[11px] top-2 bottom-2 w-px bg-stone-200 dark:bg-stone-800"/>
+          <ul className="flex flex-col gap-2">
+            {WEEK.map((d,i)=>{
+              const key = iso(d.date);
+              const isOpen = expanded.has(key);
+              const isWeekend = [0,6].includes(d.date.getDay());
+              const totalEvents = d.events.length;
+              const totalTasks = d.tasks.length;
+              return (
+                <li key={key} className="relative pl-8">
+                  <div className={`absolute left-1.5 top-2.5 w-3.5 h-3.5 rounded-full border-2
+                    ${isWeekend? 'bg-stone-100 dark:bg-stone-800 border-stone-300 dark:border-stone-700'
+                              : 'bg-white dark:bg-stone-900 border-amber-400/60'}`}/>
+                  <button onClick={()=>toggleDay(key)}
+                    className={`w-full text-left rounded-xl border px-4 py-2.5 transition-all
+                      ${isOpen
+                        ? 'border-amber-400/40 bg-amber-50/40 dark:bg-amber-500/[0.04]'
+                        : 'border-stone-200/50 dark:border-stone-800/30 bg-white/50 dark:bg-stone-900/20 hover:border-amber-400/40'}`}>
+                    <div className="flex items-baseline gap-4">
+                      <div className="w-16 shrink-0">
+                        <div className={`text-[10px] font-bold uppercase tracking-widest ${isWeekend?'text-amber-600/70 dark:text-amber-400/70':'text-stone-500 dark:text-stone-400'}`}>{d.label}</div>
+                        <div className="text-base font-semibold text-stone-700 dark:text-stone-200 tabular-nums leading-tight">{d.date.getDate()}</div>
+                      </div>
+                      {!isOpen && (
+                        <div className="flex-1 min-w-0 flex items-center gap-2 flex-wrap">
+                          {d.events.slice(0,2).map((e,ix)=>(
+                            <span key={ix} className="text-xs text-stone-600 dark:text-stone-300 flex items-baseline gap-1 min-w-0">
+                              <span className="tabular-nums text-stone-400 dark:text-stone-600">{e.time.replace(/:00$/,'')}</span>
+                              <span className="truncate">{e.title}</span>
+                            </span>
+                          ))}
+                          {(totalEvents>2 || totalTasks>0) && (
+                            <span className="text-[10px] text-stone-400 dark:text-stone-600">
+                              +{Math.max(0,totalEvents-2)+totalTasks} more
+                            </span>
+                          )}
+                          {totalEvents===0 && totalTasks===0 && <span className="text-xs italic text-stone-400 dark:text-stone-600">Open day</span>}
+                        </div>
+                      )}
+                      <svg width="12" height="12" viewBox="0 0 12 12" className={`text-stone-400 dark:text-stone-600 transition-transform ${isOpen?'rotate-180':''}`}>
+                        <path d="M3 4.5l3 3 3-3" stroke="currentColor" strokeWidth="1.5" fill="none" strokeLinecap="round"/>
+                      </svg>
+                    </div>
+                    {isOpen && (
+                      <div className="mt-3 pt-3 border-t border-stone-200/50 dark:border-stone-800/40 grid grid-cols-2 gap-4">
+                        <div>
+                          <div className="text-[9px] uppercase tracking-widest font-semibold text-stone-400 dark:text-stone-600 mb-1">Events</div>
+                          <ul className="flex flex-col gap-1">
+                            {d.events.map((e,ix)=>(
+                              <li key={ix} className="flex items-baseline gap-2 text-xs">
+                                <span className="tabular-nums text-stone-400 dark:text-stone-600 w-10 shrink-0">{e.time.replace(/:00$/,'')}</span>
+                                <span className="text-stone-700 dark:text-stone-200">{e.title}</span>
+                              </li>
+                            ))}
+                            {d.events.length===0 && <li className="text-xs italic text-stone-400">—</li>}
+                          </ul>
+                        </div>
+                        <div>
+                          <div className="text-[9px] uppercase tracking-widest font-semibold text-stone-400 dark:text-stone-600 mb-1">To-do</div>
+                          <ul className="flex flex-col gap-1">
+                            {d.tasks.map((t,ix)=>(
+                              <li key={ix} className="flex items-center gap-2 text-xs">
+                                <span className="w-3 h-3 rounded border border-stone-300/60 dark:border-stone-600/60"/>
+                                <span className="text-stone-700 dark:text-stone-200">{t}</span>
+                              </li>
+                            ))}
+                            {d.tasks.length===0 && <li className="text-xs italic text-stone-400">—</li>}
+                          </ul>
+                        </div>
+                      </div>
+                    )}
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+      </section>
+
+      {/* ── RIGHT: intention + goals + inbox ── */}
+      <aside className="col-span-4 flex flex-col gap-5">
+        {showIntention && (
+          <div className="rounded-2xl border border-amber-200/40 dark:border-amber-500/10 bg-amber-50/70 dark:bg-amber-950/20 p-5">
+            <div className="text-[10px] font-semibold uppercase tracking-widest text-amber-600/70 dark:text-amber-500/60 mb-2">Today's intention</div>
+            <div className="flex items-start gap-3">
+              <span className="font-serif-q text-5xl leading-[0.4] text-amber-400/70 dark:text-amber-500/50 mt-1">“</span>
+              <p className="text-lg font-serif-q italic text-stone-800 dark:text-stone-100 leading-snug flex-1">{intention}</p>
+            </div>
+          </div>
+        )}
+        <div className="rounded-2xl border border-stone-200/50 dark:border-stone-800/30 bg-white/60 dark:bg-stone-900/25 p-5">
+          <div className="flex items-baseline justify-between mb-4">
+            <div className="text-[10px] font-semibold uppercase tracking-widest text-stone-500 dark:text-stone-400">This week's goals</div>
+            <div className="text-xs text-amber-600 dark:text-amber-400 font-semibold tabular-nums">{Math.round(GOALS.reduce((a,g)=>a+g.progress,0)/GOALS.length*100)}%</div>
+          </div>
+          <ul className="flex flex-col gap-3.5">
+            {GOALS.map(g=>(
+              <li key={g.id}>
+                <div className="flex items-baseline justify-between mb-1">
+                  <span className="text-sm text-stone-700 dark:text-stone-200 truncate pr-2">{g.text}</span>
+                  <span className="text-xs text-stone-400 dark:text-stone-600 tabular-nums">{Math.round(g.progress*100)}%</span>
+                </div>
+                <div className="h-1 rounded-full bg-stone-200/50 dark:bg-stone-800/60 overflow-hidden">
+                  <div className="h-full rounded-full" style={{width:`${g.progress*100}%`, background:'linear-gradient(90deg,#f59e0b,#ef4444)'}}/>
+                </div>
+              </li>
+            ))}
+          </ul>
+        </div>
+        <div className="rounded-2xl border border-stone-200/50 dark:border-stone-800/30 bg-white/60 dark:bg-stone-900/25 p-5 flex flex-col gap-3">
+          <div className="flex items-baseline justify-between">
+            <div className="text-[10px] font-semibold uppercase tracking-widest text-stone-500 dark:text-stone-400">Inbox</div>
+            <div className="text-[10px] text-stone-400 dark:text-stone-600">{INBOX.length} unsorted</div>
+          </div>
+          <ul className="flex flex-col gap-1.5">
+            {INBOX.map(t=>(
+              <li key={t.id} className="flex items-center gap-2.5 rounded-lg px-2 py-1.5 border border-dashed border-stone-200/60 dark:border-stone-800/60 text-sm text-stone-600 dark:text-stone-300 hover:border-amber-400/60 transition-colors cursor-grab">
+                <span className="text-stone-300 dark:text-stone-700 text-xs">⋮⋮</span>
+                <span className="flex-1 truncate">{t.text}</span>
+              </li>
+            ))}
+          </ul>
+          <input placeholder="Capture a thought…" className="bg-transparent outline-none text-sm placeholder-stone-400 dark:placeholder-stone-600 border-b border-stone-200/50 dark:border-stone-800/50 pb-1 focus:border-amber-400/60 transition-colors"/>
+        </div>
+      </aside>
+    </main>
+  );
+}
+
+/* ---------- ASSUMPTIONS BANNER ---------- */
+function Assumptions(){
+  const [open,setOpen]=useState(true);
+  if(!open) return null;
+  return (
+    <div className="max-w-7xl mx-auto px-6 pt-4">
+      <div className="relative rounded-xl border border-stone-200/50 dark:border-stone-800/40 bg-stone-50/60 dark:bg-stone-900/40 p-4 text-sm text-stone-600 dark:text-stone-400">
+        <button onClick={()=>setOpen(false)} className="absolute right-3 top-2 text-stone-400 hover:text-stone-600 dark:hover:text-stone-300 text-xs">✕</button>
+        <div className="text-[10px] font-semibold uppercase tracking-widest text-amber-600 dark:text-amber-400 mb-1">Design notes</div>
+        <p>
+          Goal: today-first home that also shows the week ahead at a glance. Three layouts are wired as Tweaks — flip between them to compare.
+          <br/>
+          <span className="text-stone-500 dark:text-stone-500"><b>Focus</b> — big hero for Today (intention + up-next + top 3 tasks + mini-timeline), then a horizontal ribbon of the next 6 days, then goals + inbox row.</span>
+          <br/>
+          <span className="text-stone-500 dark:text-stone-500"><b>Timeline</b> — a single 7-day horizontal timeline where today is expanded ~40% and the other days are compressed lanes; easy to scan load balance across the week.</span>
+          <br/>
+          <span className="text-stone-500 dark:text-stone-500"><b>Agenda</b> — journal-style vertical stream: today hero card, then expandable rows per upcoming day. Most spatial; best for people who think in prose.</span>
+        </p>
+      </div>
+    </div>
+  );
+}
+
+/* ---------- TWEAKS PANEL ---------- */
+function TweaksPanel({ state, set, visible }){
+  if(!visible) return null;
+  const Row = ({label, children}) => (
+    <div className="flex flex-col gap-1.5">
+      <label className="text-[9px] uppercase tracking-widest font-semibold text-stone-400 dark:text-stone-500">{label}</label>
+      {children}
+    </div>
+  );
+  const Seg = ({value, options, onChange}) => (
+    <div className="flex gap-1 bg-stone-100 dark:bg-stone-800 p-0.5 rounded-lg">
+      {options.map(o=>(
+        <button key={o.v} onClick={()=>onChange(o.v)}
+          className={`flex-1 text-[11px] py-1 px-2 rounded-md capitalize transition-all
+            ${value===o.v?'bg-white dark:bg-stone-700 text-stone-800 dark:text-stone-100 shadow-sm font-medium':'text-stone-500 dark:text-stone-400'}`}>
+          {o.l}
+        </button>
+      ))}
+    </div>
+  );
+  return (
+    <div className="fixed bottom-4 right-4 z-50 w-72 rounded-2xl border border-stone-300 dark:border-stone-700 bg-white/95 dark:bg-stone-900/95 backdrop-blur-xl p-4 shadow-2xl flex flex-col gap-4">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <Flame size={16}/>
+          <span className="text-sm font-semibold text-stone-800 dark:text-stone-100">Tweaks</span>
+        </div>
+        <span className="text-[9px] uppercase tracking-widest text-stone-400 dark:text-stone-500">Home redesign</span>
+      </div>
+      <Row label="Layout variant">
+        <Seg value={state.layout} options={[
+          {v:'focus', l:'Focus'},
+          {v:'timeline', l:'Timeline'},
+          {v:'agenda', l:'Agenda'},
+        ]} onChange={v=>set({layout:v})}/>
+      </Row>
+      <Row label="Theme">
+        <Seg value={state.theme} options={[{v:'dark',l:'Dark'},{v:'light',l:'Light'}]} onChange={v=>set({theme:v})}/>
+      </Row>
+      <Row label="Intention block">
+        <Seg value={state.showIntention?'on':'off'} options={[{v:'on',l:'Show'},{v:'off',l:'Hide'}]} onChange={v=>set({showIntention:v==='on'})}/>
+      </Row>
+    </div>
+  );
+}
+
+/* ---------- APP ---------- */
+function App(){
+  const [state, setState] = useState(TWEAKS);
+  const [tweaksVisible, setTweaksVisible] = useState(false);
+  const [intention, setIntention] = useState("Move slowly and with care. One thing at a time.");
+
+  // sync theme class
+  useEffect(()=>{
+    document.documentElement.classList.toggle('dark', state.theme === 'dark');
+  }, [state.theme]);
+
+  // tweaks wiring
+  function set(patch){
+    const next = { ...state, ...patch };
+    setState(next);
+    window.parent.postMessage({ type:'__edit_mode_set_keys', edits: patch }, '*');
+  }
+  useEffect(()=>{
+    function onMsg(e){
+      if(e.data?.type==='__activate_edit_mode') setTweaksVisible(true);
+      if(e.data?.type==='__deactivate_edit_mode') setTweaksVisible(false);
+    }
+    window.addEventListener('message', onMsg);
+    window.parent.postMessage({ type:'__edit_mode_available' }, '*');
+    return ()=>window.removeEventListener('message', onMsg);
+  }, []);
+
+  const Variant =
+    state.layout==='timeline' ? VariantTimeline :
+    state.layout==='agenda'   ? VariantAgenda   :
+    VariantFocus;
+
+  return (
+    <div className={state.theme==='dark'?'dark':''}>
+      <div className="min-h-screen bg-[#faf7f2] text-stone-700 dark:bg-[#0f0e0c] dark:text-stone-300">
+        <Sidebar active="home"/>
+        <div className="ml-20">
+          <Header/>
+          <Assumptions/>
+          <Variant intention={intention} setIntention={setIntention} showIntention={state.showIntention}/>
+        </div>
+      </div>
+      <TweaksPanel state={state} set={set} visible={tweaksVisible}/>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+</script>
+</body>
+</html>

@@ -1,26 +1,25 @@
-import { useState } from 'react';
-import { useAuth } from '../contexts/AuthContext';
+import { useState } from "react";
+import { useAuth } from "../contexts/AuthContext";
+import { useLocalStorage } from "../hooks/useLocalStorage";
+import { Navigate } from "react-router-dom";
 
-interface Props {
-  theme: 'dark' | 'light';
-}
-
-export default function AuthPage({ theme }: Props) {
-  const { signIn, signUp } = useAuth();
-  const [mode, setMode] = useState<'signin' | 'signup'>('signin');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
+export default function AuthPage() {
+  const { session, signIn, signUp } = useAuth();
+  const [theme] = useLocalStorage<"dark" | "light">("wf-theme", "dark");
+  const [mode, setMode] = useState<"signin" | "signup">("signin");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
+
+  if (session) return <Navigate to="/" replace />;
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    setError('');
+    setError("");
     setSubmitting(true);
 
-    const result = mode === 'signin'
-      ? await signIn(email, password)
-      : await signUp(email, password);
+    const result = mode === "signin" ? await signIn(email, password) : await signUp(email, password);
 
     if (result.error) {
       setError(result.error);
@@ -29,7 +28,7 @@ export default function AuthPage({ theme }: Props) {
   }
 
   return (
-    <div className={theme === 'dark' ? 'dark' : ''}>
+    <div className={theme === "dark" ? "dark" : ""}>
       <div className="min-h-screen bg-[#faf7f2] dark:bg-[#0f0e0c] flex items-center justify-center px-4 transition-colors duration-300">
         <div className="w-full max-w-sm">
           {/* Logo */}
@@ -46,11 +45,9 @@ export default function AuthPage({ theme }: Props) {
                 </linearGradient>
               </defs>
             </svg>
-            <span className="text-xl font-semibold tracking-tight text-stone-900 dark:text-stone-100">
-              Wellfire
-            </span>
+            <span className="text-xl font-semibold tracking-tight text-stone-900 dark:text-stone-100">Wellfire</span>
             <p className="text-sm text-stone-400 dark:text-stone-600">
-              {mode === 'signin' ? 'Welcome back' : 'Create your account'}
+              {mode === "signin" ? "Welcome back" : "Create your account"}
             </p>
           </div>
 
@@ -74,31 +71,28 @@ export default function AuthPage({ theme }: Props) {
               className="w-full px-4 py-3 rounded-xl border border-stone-200/50 dark:border-stone-700/30 bg-white dark:bg-stone-900/40 text-sm text-stone-700 dark:text-stone-200 placeholder-stone-400 dark:placeholder-stone-600 outline-none focus:border-amber-400/50 dark:focus:border-amber-500/30 transition-colors"
             />
 
-            {error && (
-              <p className="text-xs text-rose-500 dark:text-rose-400 px-1">{error}</p>
-            )}
+            {error && <p className="text-xs text-rose-500 dark:text-rose-400 px-1">{error}</p>}
 
             <button
               type="submit"
               disabled={submitting}
               className="w-full py-3 rounded-xl bg-amber-500 hover:bg-amber-600 text-white text-sm font-semibold transition-colors disabled:opacity-50"
             >
-              {submitting
-                ? 'Please wait...'
-                : mode === 'signin'
-                  ? 'Sign in'
-                  : 'Create account'}
+              {submitting ? "Please wait..." : mode === "signin" ? "Sign in" : "Create account"}
             </button>
           </form>
 
           {/* Toggle */}
           <p className="mt-6 text-center text-xs text-stone-400 dark:text-stone-600">
-            {mode === 'signin' ? "Don't have an account?" : 'Already have an account?'}{' '}
+            {mode === "signin" ? "Don't have an account?" : "Already have an account?"}{" "}
             <button
-              onClick={() => { setMode(mode === 'signin' ? 'signup' : 'signin'); setError(''); }}
+              onClick={() => {
+                setMode(mode === "signin" ? "signup" : "signin");
+                setError("");
+              }}
               className="text-amber-500 dark:text-amber-400 hover:text-amber-600 dark:hover:text-amber-300 font-semibold transition-colors"
             >
-              {mode === 'signin' ? 'Sign up' : 'Sign in'}
+              {mode === "signin" ? "Sign up" : "Sign in"}
             </button>
           </p>
         </div>

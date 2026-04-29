@@ -1,4 +1,4 @@
-import type { Goal, TimeBlock, Task } from '../types';
+import type { Goal, TimeBlock, Task } from "../types";
 
 // DB row types (snake_case, matching Supabase schema)
 
@@ -6,7 +6,7 @@ export interface DbGoal {
   id: string;
   user_id: string;
   text: string;
-  category: 'weekly' | 'monthly' | 'big-picture';
+  category: "weekly" | "monthly" | "big-picture";
   created_at: string;
 }
 
@@ -51,7 +51,7 @@ export function dbTimeBlockToTimeBlock(row: DbTimeBlock): TimeBlock {
     endTime: row.end_time,
     color: row.color ?? undefined,
     date: row.date,
-    source: (row.source as 'local' | 'google') ?? undefined,
+    source: (row.source as "local" | "google") ?? undefined,
     googleEventId: row.google_event_id ?? undefined,
     googleCalendarId: row.google_calendar_id ?? undefined,
   };

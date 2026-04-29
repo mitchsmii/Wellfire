@@ -33,3 +33,23 @@
     border-radius: 2px;
   }
 }
+
+@layer utilities {
+  .font-serif-q {
+    font-family: 'Cormorant Garamond', 'Iowan Old Style', Georgia, serif;
+  }
+  .font-serif-display {
+    font-family: 'Fraunces', Georgia, serif;
+  }
+  .font-serif-italic {
+    font-family: 'Instrument Serif', Georgia, serif;
+  }
+
+  @keyframes pulse-soft {
+    0%, 100% { opacity: 0.55; }
+    50% { opacity: 0.85; }
+  }
+  .pulse-soft {
+    animation: pulse-soft 3s ease-in-out infinite;
+  }
+}
